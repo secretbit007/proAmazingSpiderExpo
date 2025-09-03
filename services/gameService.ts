@@ -1,0 +1,75 @@
+import { GameState } from '../types/gameTypes';
+import { convertBackendToFrontend } from '../utils/gameStateConverter';
+import { api } from './api';
+
+export const gameService = {
+  startNewGame: async (difficulty: number): Promise<GameState[]> => {
+    try {
+      const backendState = await api.startNewGame(difficulty);
+      return convertBackendToFrontend([backendState]);
+    } catch (error) {
+      // console.error('Error starting new game:', error);
+      throw error;
+    }
+  },
+
+  getGameState: async (): Promise<GameState[]> => {
+    try {
+      const backendState = await api.getGameState();
+      return convertBackendToFrontend([backendState]);
+    } catch (error) {
+      // console.error('Error getting game state:', error);
+      throw error;
+    }
+  },
+
+  makeMove: async (
+    fromRow: number,
+    fromCol: number,
+    toRow?: number,
+    toCol?: number
+  ): Promise<GameState[]> => {
+    try {
+      const backendState = await api.makeMove({
+        from_row: fromRow,
+        from_col: fromCol,
+        to_row: toRow,
+        to_col: toCol,
+      });
+      return convertBackendToFrontend(backendState);
+    } catch (error) {
+      // console.error('Error making move:', error);
+      throw error;
+    }
+  },
+
+  dealCards: async (): Promise<GameState[]> => {
+    try {
+      const backendState = await api.dealCards();
+      return convertBackendToFrontend([backendState]);
+    } catch (error) {
+      // console.error('Error dealing cards:', error);
+      throw error;
+    }
+  },
+
+  solveGame: async (): Promise<GameState[]> => {
+    try {
+      const backendState = await api.solveGame();
+      return convertBackendToFrontend(backendState);
+    } catch (error) {
+      // console.error('Error solving game:', error);
+      throw error;
+    }
+  },
+
+  undoMove: async (): Promise<GameState[]> => {
+    try {
+      const backendState = await api.undoMove();
+      return convertBackendToFrontend([backendState]);
+    } catch (error) {
+      // console.error('Error undoing move:', error);
+      throw error;
+    }
+  },
+};
