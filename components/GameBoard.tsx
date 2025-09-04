@@ -299,6 +299,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
+        position: 'relative', // Establish stacking context for z-index
     },
     center: {
         justifyContent: 'center',
@@ -310,6 +311,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         padding: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 100, // Higher than cards but lower than button bar
     },
     headerText: {
         color: 'white',
@@ -335,7 +337,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         flex: 1,
-        marginHorizontal: 10
+        marginHorizontal: 10,
+        zIndex: 1, // Lower z-index so cards stay below button bar
     },
     loadingText: {
         color: 'white',
@@ -369,6 +372,12 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999, // Very high z-index to ensure buttons stay on top of everything
+        elevation: 10, // Android elevation for proper layering
     },
     button: {
         backgroundColor: '#4a90e2',

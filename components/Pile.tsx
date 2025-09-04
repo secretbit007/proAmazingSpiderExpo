@@ -181,6 +181,8 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginHorizontal: 4,
     marginBottom: 10,
+    overflow: 'hidden', // Prevent cards from overflowing the container
+    zIndex: 1, // Ensure pile stays below button bar
   },
   cardWrapper: {
     left: 0,
