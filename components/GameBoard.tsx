@@ -22,8 +22,9 @@ export const GameBoard: React.FC = () => {
                 const state = await gameService.startNewGame(0);
                 setGameState(state[0]);
                 setError(null);
-            } catch {
+            } catch (err) {
                 setError('Failed to initialize game');
+                // console.error(err);
             } finally {
                 setLoading(false);
             }
@@ -38,8 +39,8 @@ export const GameBoard: React.FC = () => {
             // setLoading(true);
             const newState = await gameService.dealCards();
             setGameState(newState[0]);
-        } catch {
-            // console.error('Failed to deal cards');
+        } catch (err) {
+            // console.error('Failed to deal cards:', err);
         } finally {
             // setLoading(false);
         }
@@ -52,8 +53,8 @@ export const GameBoard: React.FC = () => {
             // setLoading(true);
             const newState = await gameService.undoMove();
             setGameState(newState[0]);
-        } catch {
-            // console.error('Failed to undo move');
+        } catch (err) {
+            // console.error('Failed to undo move:', err);
         } finally {
             // setLoading(false);
         }
@@ -64,8 +65,8 @@ export const GameBoard: React.FC = () => {
             setLoading(true);
             const newState = await gameService.startNewGame(currentDifficulty);
             setGameState(newState[0]);
-        } catch {
-            // console.error('Failed to start new game');
+        } catch (err) {
+            // console.error('Failed to start new game:', err);
         } finally {
             setLoading(false);
         }
@@ -104,8 +105,8 @@ export const GameBoard: React.FC = () => {
             }
             // If we get here, no valid moves were found
             // console.log('No valid moves for this card');
-        } catch {
-            // console.error('Failed to move card');
+        } catch (err) {
+            // console.error('Failed to move card:', err);
         } finally {
             // setLoading(false);
             setHoveredCard(null);
@@ -138,8 +139,8 @@ export const GameBoard: React.FC = () => {
                 }
                 return;
             }
-        } catch {
-            // console.error('Failed to solve game');
+        } catch (err) {
+            // console.error('Failed to solve game:', err);
         } finally {
             // setLoading(false);
         }
@@ -156,8 +157,9 @@ export const GameBoard: React.FC = () => {
             setGameState(state[0]);
             setCurrentDifficulty(difficulty);
             setError(null);
-        } catch {
+        } catch (err) {
             setError('Failed to start new game with selected difficulty');
+            // console.error(err);
         } finally {
             setLoading(false);
         }
@@ -299,7 +301,6 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        position: 'relative', // Establish stacking context for z-index
     },
     center: {
         justifyContent: 'center',
@@ -311,7 +312,6 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         padding: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        zIndex: 100, // Higher than cards but lower than button bar
     },
     headerText: {
         color: 'white',
@@ -337,8 +337,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         flex: 1,
-        marginHorizontal: 10,
-        zIndex: 1, // Lower z-index so cards stay below button bar
+        marginHorizontal: 10
     },
     loadingText: {
         color: 'white',
@@ -372,12 +371,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9999, // Very high z-index to ensure buttons stay on top of everything
-        elevation: 10, // Android elevation for proper layering
+        zIndex: 3000,
+        elevation: 10, // For Android
     },
     button: {
         backgroundColor: '#4a90e2',

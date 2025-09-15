@@ -2,7 +2,6 @@ import React from 'react';
 import { Image, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../types/gameTypes';
 import { IMAGES } from '../utils/assets';
-import { createShadowStyle } from '../utils/shadowStyles';
 
 interface CardProps {
   card: Card;
@@ -180,13 +179,11 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -5 }],
     borderColor: '#4a90e2',
     borderWidth: 2,
-    ...createShadowStyle({
-      shadowColor: '#4a90e2',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.6,
-      shadowRadius: 8,
-      elevation: 16,
-    }),
+    shadowColor: '#4a90e2',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    elevation: 16,
     zIndex: 100,
   },
   nonInteractiveCard: {

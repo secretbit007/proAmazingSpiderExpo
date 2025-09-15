@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Keyboard, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { createShadowStyle } from '../utils/shadowStyles';
 
 interface DifficultyModalProps {
   visible: boolean;
@@ -98,13 +97,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#2c3e50',
     borderRadius: 12,
     padding: 25,
-    ...createShadowStyle({
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 6,
-      elevation: 10,
-    }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 10,
   },
   modalTitle: {
     color: 'white',
@@ -142,13 +139,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: '48%',
     alignItems: 'center',
-    ...createShadowStyle({
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 3,
-      elevation: 4,
-    }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
   },
   cancelButton: {
     backgroundColor: '#7f8c8d',

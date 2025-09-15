@@ -114,15 +114,19 @@ export const Pile: React.FC<PileProps> = ({
 
     const baseGapSize = Math.min(gapByWidth, gapByHeight);
     
-    // If this pile is expanded and current card index is greater than or equal to expanded card index
+    // If this pile is expanded and current card index is within the expansion range (7 cards max)
     if (expandedPile === pileIndex && expandedCardIndex !== null && cardIndex >= expandedCardIndex && baseGapSize <= gapByWidth * 0.85) {
-      return baseGapSize * 2; // Double the gap size for cards after and including the expanded card
+      const cardsFromExpandedIndex = cardIndex - expandedCardIndex;
+      if (cardsFromExpandedIndex < 7) {
+        return gapByWidth; // Double the gap size for up to 7 cards after and including the expanded card
+      }
     }
 
     return baseGapSize; // Normal gap size for other cards
   };
 
   const calculateTopPosition = (cardIndex: number) => {
+    // Normal positioning for all cards - maintain original positions
     let topPosition = 0;
     for (let i = 0; i < cardIndex; i++) {
       topPosition += calculateGapSize(i);
@@ -130,7 +134,56 @@ export const Pile: React.FC<PileProps> = ({
     return topPosition;
   };
 
+  const getCardZIndex = (cardIndex: number) => {
+    // If this pile is expanded, give expanded cards higher z-index
+    if (expandedPile === pileIndex && expandedCardIndex !== null) {
+      const cardHeight = dimensions.width * 80 / 120;
+      const gapByWidth = dimensions.width * 0.3;
+      const cardCount = cards.length;
+      const gapByHeight = (dimensions.height - cardHeight) / cardCount;
+      const baseGapSize = Math.min(gapByWidth, gapByHeight);
+      const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
+      
+      if (requiresExpansion) {
+        const cardsFromExpandedIndex = cardIndex - expandedCardIndex;
+        if (cardIndex >= expandedCardIndex && cardsFromExpandedIndex < 7) {
+          // Expanded cards get higher z-index (1000 + cardIndex to maintain order)
+          return 1000 + cardIndex;
+        }
+      }
+    }
+    
+    // Normal z-index for non-expanded cards
+    return cardIndex;
+  };
+
+
   const interactiveStartIndex = getInteractiveStartIndex();
+
+  const getExpandedPileBorder = () => {
+    if (expandedPile !== pileIndex || expandedCardIndex === null) return null;
+    
+    const cardHeight = dimensions.width * 80 / 120;
+    const gapByWidth = dimensions.width * 0.3;
+    const cardCount = cards.length;
+    const gapByHeight = (dimensions.height - cardHeight) / cardCount;
+    const baseGapSize = Math.min(gapByWidth, gapByHeight);
+    const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
+    
+    if (!requiresExpansion) return null;
+    
+    const expandedCardsCount = Math.min(7, cards.length - expandedCardIndex);
+    const startTop = calculateTopPosition(expandedCardIndex);
+    const endTop = calculateTopPosition(expandedCardIndex + expandedCardsCount) + cardHeight;
+    
+    return {
+      top: startTop,
+      height: endTop - startTop,
+      width: dimensions.width,
+    };
+  };
+
+  const expandedBorder = getExpandedPileBorder();
 
   return (
     <View style={styles.pileContainer} onLayout={onLayout}>
@@ -152,7 +205,7 @@ export const Pile: React.FC<PileProps> = ({
             <View style={[
               styles.cardWrapper,
               {
-                zIndex: cardIndex,
+                zIndex: getCardZIndex(cardIndex),
                 top: topPosition,
                 position: 'absolute',
               }
@@ -170,6 +223,18 @@ export const Pile: React.FC<PileProps> = ({
           </TouchableWithoutFeedback>
         );
       })}
+      
+      {/* Expanded pile border overlay */}
+      {expandedBorder && (
+        <View style={[
+          styles.expandedPileBorder,
+          {
+            top: expandedBorder.top,
+            height: expandedBorder.height,
+            width: expandedBorder.width,
+          }
+        ]} />
+      )}
     </View>
   );
 };
@@ -181,8 +246,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginHorizontal: 4,
     marginBottom: 10,
-    overflow: 'hidden', // Prevent cards from overflowing the container
-    zIndex: 1, // Ensure pile stays below button bar
   },
   cardWrapper: {
     left: 0,
@@ -191,6 +254,15 @@ const styles = StyleSheet.create({
     borderColor: '#4a90e2',
     borderWidth: 2,
     borderRadius: 5,
+  },
+  expandedPileBorder: {
+    position: 'absolute',
+    borderColor: '#ff6b35',
+    borderWidth: 3,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+    pointerEvents: 'none',
+    zIndex: 2000,
   },
   nonInteractiveCard: {
     opacity: 0.9,
