@@ -13,6 +13,7 @@ export interface Pile {
 }
 
 export interface GameState {
+  sessionId?: string;
   piles: Pile[];
   stock: Card[];
   completedSequences: number;

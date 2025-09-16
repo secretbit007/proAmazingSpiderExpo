@@ -1,14 +1,25 @@
 import { GameState } from '../types/gameTypes';
 import { convertBackendToFrontend } from '../utils/gameStateConverter';
+import { sessionStorage } from '../utils/sessionStorage';
 import { api } from './api';
 
 export const gameService = {
   startNewGame: async (difficulty: number): Promise<GameState[]> => {
     try {
-      const backendState = await api.startNewGame(difficulty);
-      return convertBackendToFrontend([backendState]);
+      // Clear any existing session before starting a new game
+      sessionStorage.clearSessionId();
+      
+      const response = await api.startNewGame(difficulty);
+      
+      // Extract and store session_id if present
+      if (response.session_id) {
+        sessionStorage.setSessionId(response.session_id);
+      }
+      
+      // The actual game state is nested under 'game_state'
+      return convertBackendToFrontend([response.game_state]);
     } catch (error) {
-      // console.error('Error starting new game:', error);
+      console.error('Error starting new game:', error);
       throw error;
     }
   },
@@ -71,5 +82,9 @@ export const gameService = {
       // console.error('Error undoing move:', error);
       throw error;
     }
+  },
+
+  clearSession: (): void => {
+    sessionStorage.clearSessionId();
   },
 };

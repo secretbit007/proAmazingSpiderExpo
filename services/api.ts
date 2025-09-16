@@ -1,4 +1,5 @@
 import { GameState, MoveRequest } from '../types/gameTypes';
+import { sessionStorage } from '../utils/sessionStorage';
 
 const API_BASE_URL = 'https://cf896c8ceacf.ngrok-free.app/api/v1';
 
@@ -10,9 +11,15 @@ const handleResponse = async (response: Response): Promise<any> => {
   return await response.json();
 };
 
+const buildUrlWithSession = (endpoint: string): string => {
+  const sessionId = sessionStorage.getSessionId();
+  const baseUrl = `${API_BASE_URL}${endpoint}`;
+  return sessionId ? `${baseUrl}?session_id=${sessionId}` : baseUrl;
+};
+
 export const api = {
-  startNewGame: async (difficulty: number): Promise<GameState> => {
-    const response = await fetch(`${API_BASE_URL}/new-game`, {
+  startNewGame: async (difficulty: number): Promise<{ session_id: string; game_state: GameState }> => {
+    const response = await fetch(buildUrlWithSession('/new-game'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ difficulty }),
@@ -21,12 +28,12 @@ export const api = {
   },
 
   getGameState: async (): Promise<GameState> => {
-    const response = await fetch(`${API_BASE_URL}/game-state`);
+    const response = await fetch(buildUrlWithSession('/game-state'));
     return handleResponse(response);
   },
 
   makeMove: async (request: MoveRequest): Promise<GameState[]> => {
-    const response = await fetch(`${API_BASE_URL}/move`, {
+    const response = await fetch(buildUrlWithSession('/move'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
@@ -35,7 +42,7 @@ export const api = {
   },
 
   dealCards: async (): Promise<GameState> => {
-    const response = await fetch(`${API_BASE_URL}/deal`, {
+    const response = await fetch(buildUrlWithSession('/deal'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -43,7 +50,7 @@ export const api = {
   },
 
   solveGame: async (): Promise<GameState[]> => {
-    const response = await fetch(`${API_BASE_URL}/solve`, {
+    const response = await fetch(buildUrlWithSession('/solve'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -51,7 +58,7 @@ export const api = {
   },
 
   undoMove: async (): Promise<GameState> => {
-    const response = await fetch(`${API_BASE_URL}/undo`, {
+    const response = await fetch(buildUrlWithSession('/undo'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
