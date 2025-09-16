@@ -1,6 +1,6 @@
 import { GameState, MoveRequest } from '../types/gameTypes';
 
-const API_BASE_URL = 'https://3c7fcc1a152a.ngrok-free.app/api/v1';
+const API_BASE_URL = 'https://cf896c8ceacf.ngrok-free.app/api/v1';
 
 const handleResponse = async (response: Response): Promise<any> => {
   if (!response.ok) {

@@ -245,25 +245,6 @@ export const GameBoard: React.FC = () => {
                     ))}
                 </View>
 
-                {/* <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <View style={styles.gameControls}>
-                        <View style={styles.completedContainer}>
-                            <SuitCompletePile suit='spades' cards={[]} />
-                            <SuitCompletePile suit='hearts' cards={[]} />
-                            <SuitCompletePile suit='clubs' cards={[]} />
-                            <SuitCompletePile suit='diamonds' cards={[]} />
-                        </View>
-
-                        <View style={styles.stockContainer}>
-                            <Stock
-                                cards={gameState.stock}
-                                onDeal={handleDealCards}
-                                drawsRemaining={gameState.drawsRemaining}
-                            />
-                        </View>
-                    </View>
-                </View> */}
-
                 <View style={styles.buttonBar}>
                     <TouchableOpacity style={styles.button} onPress={handleNewGame}>
                         <Text style={styles.buttonText}>New</Text>
@@ -337,7 +318,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         flex: 1,
-        marginHorizontal: 10
+        marginHorizontal: 10,
     },
     loadingText: {
         color: 'white',

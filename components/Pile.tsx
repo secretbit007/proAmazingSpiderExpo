@@ -1,7 +1,7 @@
 import React from 'react';
-import { LayoutChangeEvent, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
-import { Card } from '../types/gameTypes';
+import { View, StyleSheet, TouchableWithoutFeedback, LayoutChangeEvent } from 'react-native';
 import { CardComponent } from './Card';
+import { Card } from '../types/gameTypes';
 
 interface PileProps {
   cards: Card[];
@@ -58,11 +58,63 @@ export const Pile: React.FC<PileProps> = ({
     const cardHeight = dimensions.width * 80 / 120;
     const gapByWidth = dimensions.width * 0.3;
     const cardCount = cards.length;
-    const gapByHeight = (dimensions.height - cardHeight) / Math.max(cardCount, 1);
+    const gapByHeight = (dimensions.height - cardHeight * 2) / cardCount;
     const baseGapSize = Math.min(gapByWidth, gapByHeight);
     const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
 
     const isExpandedOnThisCard = expandedPile === pileIndex && expandedCardIndex === cardIndex;
+
+    // Check if we're currently in an expanded state and if the expansion includes the last card
+    const isCurrentlyExpanded = expandedPile === pileIndex && expandedCardIndex !== null;
+    let expansionIncludesLastCard = false;
+    
+    if (isCurrentlyExpanded && requiresExpansion) {
+      // Calculate the 7-card expansion range (same logic as calculateGapSize)
+      const cardsFromClickedToEnd = cards.length - expandedCardIndex;
+      
+      let expansionStartIndex, expansionEndIndex;
+      
+      if (cardsFromClickedToEnd >= 7) {
+        // Enough cards from clicked position, expand 7 cards from clicked card
+        expansionStartIndex = expandedCardIndex;
+        expansionEndIndex = expandedCardIndex + 7;
+      } else {
+        // Not enough cards from clicked position, expand cards above as well
+        const cardsNeededAbove = 7 - cardsFromClickedToEnd;
+        expansionStartIndex = Math.max(0, expandedCardIndex - cardsNeededAbove);
+        expansionEndIndex = expandedCardIndex + cardsFromClickedToEnd;
+      }
+      
+      // Check if the expansion includes the last card (cards.length - 1)
+      expansionIncludesLastCard = (cards.length - 1) >= expansionStartIndex && (cards.length - 1) < expansionEndIndex;
+    }
+
+    // If expansion includes the last card and we're clicking within the expanded range, move immediately
+    if (isCurrentlyExpanded && expansionIncludesLastCard && requiresExpansion) {
+      const cardsFromClickedToEnd = cards.length - expandedCardIndex;
+      
+      let expansionStartIndex, expansionEndIndex;
+      
+      if (cardsFromClickedToEnd >= 7) {
+        expansionStartIndex = expandedCardIndex;
+        expansionEndIndex = expandedCardIndex + 7;
+      } else {
+        const cardsNeededAbove = 7 - cardsFromClickedToEnd;
+        expansionStartIndex = Math.max(0, expandedCardIndex - cardsNeededAbove);
+        expansionEndIndex = expandedCardIndex + cardsFromClickedToEnd;
+      }
+      
+      // Check if current card is within the expanded range
+      if (cardIndex >= expansionStartIndex && cardIndex < expansionEndIndex) {
+        // Collapse expansion and move immediately
+        setExpandedPile(null);
+        setExpandedCardIndex(null);
+        if (onCardPress) {
+          onCardPress(pileIndex, cardIndex);
+        }
+        return;
+      }
+    }
 
     // Expanded status should be true only if threshold holds
     if (requiresExpansion) {
@@ -110,15 +162,68 @@ export const Pile: React.FC<PileProps> = ({
     const cardHeight = dimensions.width * 80 / 120;
     const gapByWidth = dimensions.width * 0.3;
     const cardCount = cards.length;
-    const gapByHeight = (dimensions.height - cardHeight) / cardCount;
+    const gapByHeight = (dimensions.height - cardHeight * 2) / cardCount;
 
     const baseGapSize = Math.min(gapByWidth, gapByHeight);
     
-    // If this pile is expanded and current card index is within the expansion range (7 cards max)
-    if (expandedPile === pileIndex && expandedCardIndex !== null && cardIndex >= expandedCardIndex && baseGapSize <= gapByWidth * 0.85) {
-      const cardsFromExpandedIndex = cardIndex - expandedCardIndex;
-      if (cardsFromExpandedIndex < 7) {
-        return gapByWidth; // Double the gap size for up to 7 cards after and including the expanded card
+    // If this pile is expanded, calculate the 7-card expansion range
+    if (expandedPile === pileIndex && expandedCardIndex !== null && baseGapSize <= gapByWidth * 0.85) {
+      // Calculate how many cards are available from clicked card to end
+      const cardsFromClickedToEnd = cards.length - expandedCardIndex;
+      
+      // Determine the start and end indices for the 7-card expansion
+      let expansionStartIndex, expansionEndIndex;
+      
+      if (cardsFromClickedToEnd >= 7) {
+        // Enough cards from clicked position, expand 7 cards from clicked card
+        expansionStartIndex = expandedCardIndex;
+        expansionEndIndex = expandedCardIndex + 7;
+      } else {
+        // Not enough cards from clicked position, expand cards above as well
+        const cardsNeededAbove = 7 - cardsFromClickedToEnd;
+        expansionStartIndex = Math.max(0, expandedCardIndex - cardsNeededAbove);
+        expansionEndIndex = expandedCardIndex + cardsFromClickedToEnd;
+      }
+      
+      // Check if current card is within the 7-card expansion range
+      if (cardIndex >= expansionStartIndex && cardIndex < expansionEndIndex) {
+        return gapByWidth; // Expanded gap size for the 7 cards
+      }
+      
+      // For unexpanded cards, check if we need to reduce gap to prevent overflow
+      // Calculate total height needed for all cards with current gap sizes
+      let totalHeightNeeded = 0;
+      
+      // Calculate height for cards before expansion
+      for (let i = 0; i < expansionStartIndex; i++) {
+        totalHeightNeeded += baseGapSize;
+      }
+      
+      // Calculate height for expanded cards
+      const expandedCardsCount = expansionEndIndex - expansionStartIndex;
+      totalHeightNeeded += gapByWidth * (expandedCardsCount - 1);
+      
+      // Calculate height for cards after expansion
+      for (let i = expansionEndIndex; i < cards.length; i++) {
+        totalHeightNeeded += baseGapSize;
+      }
+      
+      // Add card heights (all cards have the same height)
+      totalHeightNeeded += cardHeight * cards.length;
+      
+      // If total height exceeds container height, reduce gap for unexpanded cards
+      if (totalHeightNeeded > dimensions.height) {
+        const availableHeightForGaps = dimensions.height - (cardHeight * cards.length);
+        const expandedCardsGapHeight = gapByWidth * (expandedCardsCount - 1);
+        const unexpandedCardsCount = cards.length - expandedCardsCount;
+        
+        if (unexpandedCardsCount > 0) {
+          const remainingHeightForUnexpanded = availableHeightForGaps - expandedCardsGapHeight;
+          const reducedGapSize = Math.max(1, remainingHeightForUnexpanded / unexpandedCardsCount);
+          
+          // Return reduced gap size for unexpanded cards
+          return reducedGapSize;
+        }
       }
     }
 
@@ -134,6 +239,41 @@ export const Pile: React.FC<PileProps> = ({
     return topPosition;
   };
 
+  const isCardInExpandedRange = (cardIndex: number) => {
+    // Check if this pile is expanded and if the card is in the expanded range
+    if (expandedPile === pileIndex && expandedCardIndex !== null) {
+      const cardHeight = dimensions.width * 80 / 120;
+      const gapByWidth = dimensions.width * 0.3;
+      const cardCount = cards.length;
+      const gapByHeight = (dimensions.height - cardHeight) / cardCount;
+      const baseGapSize = Math.min(gapByWidth, gapByHeight);
+      const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
+      
+      if (requiresExpansion) {
+        // Calculate the 7-card expansion range (same logic as calculateGapSize)
+        const cardsFromClickedToEnd = cards.length - expandedCardIndex;
+        
+        let expansionStartIndex, expansionEndIndex;
+        
+        if (cardsFromClickedToEnd >= 7) {
+          // Enough cards from clicked position, expand 7 cards from clicked card
+          expansionStartIndex = expandedCardIndex;
+          expansionEndIndex = expandedCardIndex + 7;
+        } else {
+          // Not enough cards from clicked position, expand cards above as well
+          const cardsNeededAbove = 7 - cardsFromClickedToEnd;
+          expansionStartIndex = Math.max(0, expandedCardIndex - cardsNeededAbove);
+          expansionEndIndex = expandedCardIndex + cardsFromClickedToEnd;
+        }
+        
+        // Check if current card is within the 7-card expansion range
+        return cardIndex >= expansionStartIndex && cardIndex < expansionEndIndex;
+      }
+    }
+    
+    return false;
+  };
+
   const getCardZIndex = (cardIndex: number) => {
     // If this pile is expanded, give expanded cards higher z-index
     if (expandedPile === pileIndex && expandedCardIndex !== null) {
@@ -145,8 +285,24 @@ export const Pile: React.FC<PileProps> = ({
       const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
       
       if (requiresExpansion) {
-        const cardsFromExpandedIndex = cardIndex - expandedCardIndex;
-        if (cardIndex >= expandedCardIndex && cardsFromExpandedIndex < 7) {
+        // Calculate the 7-card expansion range (same logic as calculateGapSize)
+        const cardsFromClickedToEnd = cards.length - expandedCardIndex;
+        
+        let expansionStartIndex, expansionEndIndex;
+        
+        if (cardsFromClickedToEnd >= 7) {
+          // Enough cards from clicked position, expand 7 cards from clicked card
+          expansionStartIndex = expandedCardIndex;
+          expansionEndIndex = expandedCardIndex + 7;
+        } else {
+          // Not enough cards from clicked position, expand cards above as well
+          const cardsNeededAbove = 7 - cardsFromClickedToEnd;
+          expansionStartIndex = Math.max(0, expandedCardIndex - cardsNeededAbove);
+          expansionEndIndex = expandedCardIndex + cardsFromClickedToEnd;
+        }
+        
+        // Check if current card is within the 7-card expansion range
+        if (cardIndex >= expansionStartIndex && cardIndex < expansionEndIndex) {
           // Expanded cards get higher z-index (1000 + cardIndex to maintain order)
           return 1000 + cardIndex;
         }
@@ -160,37 +316,14 @@ export const Pile: React.FC<PileProps> = ({
 
   const interactiveStartIndex = getInteractiveStartIndex();
 
-  const getExpandedPileBorder = () => {
-    if (expandedPile !== pileIndex || expandedCardIndex === null) return null;
-    
-    const cardHeight = dimensions.width * 80 / 120;
-    const gapByWidth = dimensions.width * 0.3;
-    const cardCount = cards.length;
-    const gapByHeight = (dimensions.height - cardHeight) / cardCount;
-    const baseGapSize = Math.min(gapByWidth, gapByHeight);
-    const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
-    
-    if (!requiresExpansion) return null;
-    
-    const expandedCardsCount = Math.min(7, cards.length - expandedCardIndex);
-    const startTop = calculateTopPosition(expandedCardIndex);
-    const endTop = calculateTopPosition(expandedCardIndex + expandedCardsCount) + cardHeight;
-    
-    return {
-      top: startTop,
-      height: endTop - startTop,
-      width: dimensions.width,
-    };
-  };
-
-  const expandedBorder = getExpandedPileBorder();
-
   return (
     <View style={styles.pileContainer} onLayout={onLayout}>
       {cards.map((card, cardIndex) => {
         const isInteractive = cardIndex >= interactiveStartIndex;
         const isHovered = hoveredCard?.pileIndex === pileIndex && 
                           hoveredCard?.cardIndex === cardIndex;
+        const isInExpandedRange = isCardInExpandedRange(cardIndex);
+        const isPileExpanded = expandedPile === pileIndex && expandedCardIndex !== null;
 
         const topPosition = calculateTopPosition(cardIndex);
 
@@ -217,24 +350,13 @@ export const Pile: React.FC<PileProps> = ({
                 style={[
                   isHovered && styles.hoveredCard,
                   !isInteractive && styles.nonInteractiveCard,
+                  isPileExpanded && !isInExpandedRange && styles.unexpandedCard,
                 ]}
               />
             </View>
           </TouchableWithoutFeedback>
         );
       })}
-      
-      {/* Expanded pile border overlay */}
-      {expandedBorder && (
-        <View style={[
-          styles.expandedPileBorder,
-          {
-            top: expandedBorder.top,
-            height: expandedBorder.height,
-            width: expandedBorder.width,
-          }
-        ]} />
-      )}
     </View>
   );
 };
@@ -245,7 +367,6 @@ const styles = StyleSheet.create({
     maxWidth: 80,
     position: 'relative',
     marginHorizontal: 4,
-    marginBottom: 10,
   },
   cardWrapper: {
     left: 0,
@@ -255,16 +376,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 5,
   },
-  expandedPileBorder: {
-    position: 'absolute',
-    borderColor: '#ff6b35',
-    borderWidth: 3,
-    borderRadius: 5,
-    backgroundColor: 'rgba(255, 107, 53, 0.1)',
-    pointerEvents: 'none',
-    zIndex: 2000,
-  },
   nonInteractiveCard: {
     opacity: 0.9,
+  },
+  unexpandedCard: {
+    opacity: 0.4,
   },
 });
