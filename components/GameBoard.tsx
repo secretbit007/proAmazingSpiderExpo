@@ -215,7 +215,7 @@ export const GameBoard: React.FC = () => {
     return (
         <ImageBackground
             source={IMAGES.background}
-            style={[styles.backgroundImage, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+            style={styles.backgroundImage}
             resizeMode="cover"
         >
             <View style={styles.logoContainer}>
@@ -226,7 +226,7 @@ export const GameBoard: React.FC = () => {
                 />
             </View>
             
-            <View style={styles.container}>
+            <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
                 <View style={styles.header}>
                     <Text style={styles.headerText}>Moves: {gameState.moves}</Text>
                     <Text style={styles.headerText}>Difficulty: {currentDifficulty}</Text>
@@ -247,7 +247,7 @@ export const GameBoard: React.FC = () => {
                     ))}
                 </View>
 
-                <View style={[styles.buttonBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+                <View style={styles.buttonBar}>
                     <TouchableOpacity style={styles.button} onPress={handleNewGame}>
                         <Text style={styles.buttonText}>New</Text>
                     </TouchableOpacity>
