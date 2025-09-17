@@ -226,14 +226,14 @@ export const GameBoard: React.FC = () => {
                 />
             </View>
             
-            <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-                <View style={styles.header}>
-                    <Text style={styles.headerText}>Moves: {gameState.moves}</Text>
-                    <Text style={styles.headerText}>Difficulty: {currentDifficulty}</Text>
-                    <Text style={styles.headerText}>Completed: {gameState.completedSequences}/8</Text>
-                    <Text style={styles.headerText}>Stack: {gameState.drawsRemaining}/5</Text>
-                </View>
+            <View style={[styles.header, { paddingTop: insets.top }]}>
+                <Text style={styles.headerText}>Moves: {gameState.moves}</Text>
+                <Text style={styles.headerText}>Difficulty: {currentDifficulty}</Text>
+                <Text style={styles.headerText}>Completed: {gameState.completedSequences}/8</Text>
+                <Text style={styles.headerText}>Stack: {gameState.drawsRemaining}/5</Text>
+            </View>
 
+            <View style={styles.container}>
                 <View style={styles.pilesContainer}>
                     {gameState.piles.map((pile, pileIndex) => (
                         <Pile
@@ -246,8 +246,9 @@ export const GameBoard: React.FC = () => {
                         />
                     ))}
                 </View>
+            </View>
 
-                <View style={styles.buttonBar}>
+            <View style={[styles.buttonBar, { paddingBottom: insets.bottom }]}>
                     <TouchableOpacity style={styles.button} onPress={handleNewGame}>
                         <Text style={styles.buttonText}>New</Text>
                     </TouchableOpacity>
@@ -265,13 +266,12 @@ export const GameBoard: React.FC = () => {
                     </TouchableOpacity>
                 </View>
 
-                <DifficultyModal
-                    visible={showDifficultyModal}
-                    onClose={() => setShowDifficultyModal(false)}
-                    onDifficultySelect={handleDifficultySelect}
-                    currentDifficulty={currentDifficulty}
-                />
-            </View>
+            <DifficultyModal
+                visible={showDifficultyModal}
+                onClose={() => setShowDifficultyModal(false)}
+                onDifficultySelect={handleDifficultySelect}
+                currentDifficulty={currentDifficulty}
+            />
         </ImageBackground>
     );
 };
@@ -290,11 +290,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     header: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginBottom: 10,
         padding: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 3000,
+        elevation: 10, // For Android
     },
     headerText: {
         color: 'white',
@@ -321,6 +326,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         flex: 1,
         marginHorizontal: 10,
+        marginTop: 60, // Space for the header bar
+        marginBottom: 60, // Space for the button bar
     },
     loadingText: {
         color: 'white',
@@ -350,6 +357,10 @@ const styles = StyleSheet.create({
         paddingBottom: 10,
     },
     buttonBar: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingVertical: 10,
