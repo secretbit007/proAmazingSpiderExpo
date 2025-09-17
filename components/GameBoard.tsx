@@ -226,15 +226,11 @@ export const GameBoard: React.FC = () => {
                 />
             </View>
             
-            <View style={[styles.header, { paddingTop: insets.top }]}>
-                <View style={styles.headerLeft}>
-                    <Text style={styles.headerText}>Moves: {gameState.moves}</Text>
-                    <Text style={styles.headerText}>Difficulty: {currentDifficulty}</Text>
-                </View>
-                <View style={styles.headerRight}>
-                    <Text style={styles.headerText}>Completed: {gameState.completedSequences}/8</Text>
-                    <Text style={styles.headerText}>Stack: {gameState.drawsRemaining}/5</Text>
-                </View>
+            <View style={styles.header}>
+                <Text style={styles.headerText}>Moves: {gameState.moves}</Text>
+                <Text style={styles.headerText}>Difficulty: {currentDifficulty}</Text>
+                <Text style={styles.headerText}>Completed: {gameState.completedSequences}/8</Text>
+                <Text style={styles.headerText}>Stack: {gameState.drawsRemaining}/5</Text>
             </View>
 
             <View style={styles.container}>
@@ -252,7 +248,7 @@ export const GameBoard: React.FC = () => {
                 </View>
             </View>
 
-            <View style={[styles.buttonBar, { paddingBottom: insets.bottom }]}>
+            <View style={styles.buttonBar}>
                 <TouchableOpacity style={styles.button} onPress={handleNewGame}>
                     <Text style={styles.buttonText}>New</Text>
                 </TouchableOpacity>
@@ -309,16 +305,6 @@ const styles = StyleSheet.create({
     headerText: {
         color: 'white',
         fontSize: 16,
-    },
-    headerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 20,
-    },
-    headerRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 20,
     },
     bottomSection: {
         flexDirection: 'row',
