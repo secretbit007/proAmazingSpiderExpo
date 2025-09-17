@@ -3,7 +3,7 @@
     "name": "proAmazingSpider",
     "slug": "proAmazingSpider",
     "version": "1.0.0",
-    "orientation": "landscape",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "proamazingspider",
     "userInterfaceStyle": "automatic",
@@ -12,7 +12,19 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.bit.proAmazingSpider",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight",
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown"
+        ],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight",
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown"
+        ]
       }
     },
     "android": {
@@ -21,7 +33,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.bit.proAmazingSpider"
+      "package": "com.bit.proAmazingSpider",
+      "screenOrientation": "unspecified"
     },
     "web": {
       "bundler": "metro",

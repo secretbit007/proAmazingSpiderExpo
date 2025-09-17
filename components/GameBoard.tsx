@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
 import { IMAGES, preloadImages } from '../utils/assets';
@@ -7,6 +8,7 @@ import { DifficultyModal } from './DifficultyModal';
 import { Pile } from './Pile';
 
 export const GameBoard: React.FC = () => {
+    const insets = useSafeAreaInsets();
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -213,7 +215,7 @@ export const GameBoard: React.FC = () => {
     return (
         <ImageBackground
             source={IMAGES.background}
-            style={styles.backgroundImage}
+            style={[styles.backgroundImage, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
             resizeMode="cover"
         >
             <View style={styles.logoContainer}>
@@ -245,7 +247,7 @@ export const GameBoard: React.FC = () => {
                     ))}
                 </View>
 
-                <View style={styles.buttonBar}>
+                <View style={[styles.buttonBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
                     <TouchableOpacity style={styles.button} onPress={handleNewGame}>
                         <Text style={styles.buttonText}>New</Text>
                     </TouchableOpacity>
