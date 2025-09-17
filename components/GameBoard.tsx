@@ -227,10 +227,14 @@ export const GameBoard: React.FC = () => {
             </View>
             
             <View style={[styles.header, { paddingTop: insets.top }]}>
-                <Text style={styles.headerText}>Moves: {gameState.moves}</Text>
-                <Text style={styles.headerText}>Difficulty: {currentDifficulty}</Text>
-                <Text style={styles.headerText}>Completed: {gameState.completedSequences}/8</Text>
-                <Text style={styles.headerText}>Stack: {gameState.drawsRemaining}/5</Text>
+                <View style={styles.headerLeft}>
+                    <Text style={styles.headerText}>Moves: {gameState.moves}</Text>
+                    <Text style={styles.headerText}>Difficulty: {currentDifficulty}</Text>
+                </View>
+                <View style={styles.headerRight}>
+                    <Text style={styles.headerText}>Completed: {gameState.completedSequences}/8</Text>
+                    <Text style={styles.headerText}>Stack: {gameState.drawsRemaining}/5</Text>
+                </View>
             </View>
 
             <View style={styles.container}>
@@ -295,8 +299,9 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        padding: 10,
+        justifyContent: 'space-between',
+        paddingHorizontal: 0,
+        paddingVertical: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 3000,
         elevation: 10, // For Android
@@ -304,6 +309,16 @@ const styles = StyleSheet.create({
     headerText: {
         color: 'white',
         fontSize: 16,
+    },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 20,
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 20,
     },
     bottomSection: {
         flexDirection: 'row',
@@ -363,6 +378,7 @@ const styles = StyleSheet.create({
         right: 0,
         flexDirection: 'row',
         justifyContent: 'space-between',
+        paddingHorizontal: 0,
         paddingVertical: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 3000,
@@ -373,7 +389,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
         flex: 1,
-        marginHorizontal: 5,
+        marginHorizontal: 0,
         alignItems: 'center',
     },
     buttonText: {
