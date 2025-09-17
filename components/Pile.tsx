@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, StyleSheet, TouchableWithoutFeedback, LayoutChangeEvent } from 'react-native';
-import { CardComponent } from './Card';
+import { LayoutChangeEvent, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
 import { Card } from '../types/gameTypes';
+import { CardComponent } from './Card';
 
 interface PileProps {
   cards: Card[];
@@ -144,6 +144,14 @@ export const Pile: React.FC<PileProps> = ({
   const handleHover = (cardIndex: number, isHovered: boolean) => {
     if (!disabled && onCardHover) {
       onCardHover(pileIndex, cardIndex, isHovered);
+    }
+  };
+
+  const handlePileContainerPress = () => {
+    // Only collapse if this pile is currently expanded
+    if (expandedPile === pileIndex && expandedCardIndex !== null) {
+      setExpandedPile(null);
+      setExpandedCardIndex(null);
     }
   };
 
@@ -317,47 +325,49 @@ export const Pile: React.FC<PileProps> = ({
   const interactiveStartIndex = getInteractiveStartIndex();
 
   return (
-    <View style={styles.pileContainer} onLayout={onLayout}>
-      {cards.map((card, cardIndex) => {
-        const isInteractive = cardIndex >= interactiveStartIndex;
-        const isHovered = hoveredCard?.pileIndex === pileIndex && 
-                          hoveredCard?.cardIndex === cardIndex;
-        const isInExpandedRange = isCardInExpandedRange(cardIndex);
-        const isPileExpanded = expandedPile === pileIndex && expandedCardIndex !== null;
+    <TouchableWithoutFeedback onPress={handlePileContainerPress}>
+      <View style={styles.pileContainer} onLayout={onLayout}>
+        {cards.map((card, cardIndex) => {
+          const isInteractive = cardIndex >= interactiveStartIndex;
+          const isHovered = hoveredCard?.pileIndex === pileIndex && 
+                            hoveredCard?.cardIndex === cardIndex;
+          const isInExpandedRange = isCardInExpandedRange(cardIndex);
+          const isPileExpanded = expandedPile === pileIndex && expandedCardIndex !== null;
 
-        const topPosition = calculateTopPosition(cardIndex);
+          const topPosition = calculateTopPosition(cardIndex);
 
-        return (
-          <TouchableWithoutFeedback
-            key={`pile-${pileIndex}-card-${cardIndex}`}
-            onPress={() => handleCardPress(cardIndex)}
-            onPressIn={() => isInteractive && handleHover(cardIndex, true)}
-            onPressOut={() => isInteractive && handleHover(cardIndex, false)}
-            disabled={!isInteractive || disabled}
-          >
-            <View style={[
-              styles.cardWrapper,
-              {
-                zIndex: getCardZIndex(cardIndex),
-                top: topPosition,
-                position: 'absolute',
-              }
-            ]}>
-              <CardComponent
-                card={card}
-                isHovered={isHovered}
-                isInteractive={isInteractive && !disabled}
-                style={[
-                  isHovered && styles.hoveredCard,
-                  !isInteractive && styles.nonInteractiveCard,
-                  isPileExpanded && !isInExpandedRange && styles.unexpandedCard,
-                ]}
-              />
-            </View>
-          </TouchableWithoutFeedback>
-        );
-      })}
-    </View>
+          return (
+            <TouchableWithoutFeedback
+              key={`pile-${pileIndex}-card-${cardIndex}`}
+              onPress={() => handleCardPress(cardIndex)}
+              onPressIn={() => isInteractive && handleHover(cardIndex, true)}
+              onPressOut={() => isInteractive && handleHover(cardIndex, false)}
+              disabled={!isInteractive || disabled}
+            >
+              <View style={[
+                styles.cardWrapper,
+                {
+                  zIndex: getCardZIndex(cardIndex),
+                  top: topPosition,
+                  position: 'absolute',
+                }
+              ]}>
+                <CardComponent
+                  card={card}
+                  isHovered={isHovered}
+                  isInteractive={isInteractive && !disabled}
+                  style={[
+                    isHovered && styles.hoveredCard,
+                    !isInteractive && styles.nonInteractiveCard,
+                    isPileExpanded && !isInExpandedRange && styles.unexpandedCard,
+                  ]}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          );
+        })}
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 
