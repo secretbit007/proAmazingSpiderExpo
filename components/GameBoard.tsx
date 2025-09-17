@@ -227,15 +227,13 @@ export const GameBoard: React.FC = () => {
             </View>
             
             <View style={[styles.header, { paddingTop: insets.top }]}>
-                <View style={[styles.headerContent, { top: insets.top }]}>
-                    <View style={styles.headerLeft}>
-                        <Text style={styles.headerText}>Moves: {gameState.moves}</Text>
-                        <Text style={styles.headerText}>Difficulty: {currentDifficulty}</Text>
-                    </View>
-                    <View style={styles.headerRight}>
-                        <Text style={styles.headerText}>Completed: {gameState.completedSequences}/8</Text>
-                        <Text style={styles.headerText}>Stack: {gameState.drawsRemaining}/5</Text>
-                    </View>
+                <View style={styles.headerLeft}>
+                    <Text style={styles.headerText}>Moves: {gameState.moves}</Text>
+                    <Text style={styles.headerText}>Difficulty: {currentDifficulty}</Text>
+                </View>
+                <View style={styles.headerRight}>
+                    <Text style={styles.headerText}>Completed: {gameState.completedSequences}/8</Text>
+                    <Text style={styles.headerText}>Stack: {gameState.drawsRemaining}/5</Text>
                 </View>
             </View>
 
@@ -255,23 +253,21 @@ export const GameBoard: React.FC = () => {
             </View>
 
             <View style={[styles.buttonBar, { paddingBottom: insets.bottom }]}>
-                <View style={[styles.buttonContent, { bottom: insets.bottom }]}>
-                    <TouchableOpacity style={styles.button} onPress={handleNewGame}>
-                        <Text style={styles.buttonText}>New</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={handleDealCards}>
-                        <Text style={styles.buttonText}>Stack</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={handleSolve}>
-                        <Text style={styles.buttonText}>Solve</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={handleUndo}>
-                        <Text style={styles.buttonText}>Undo</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={handleDifficulty}>
-                        <Text style={styles.buttonText}>Diff</Text>
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity style={styles.button} onPress={handleNewGame}>
+                    <Text style={styles.buttonText}>New</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button} onPress={handleDealCards}>
+                    <Text style={styles.buttonText}>Stack</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button} onPress={handleSolve}>
+                    <Text style={styles.buttonText}>Solve</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button} onPress={handleUndo}>
+                    <Text style={styles.buttonText}>Undo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button} onPress={handleDifficulty}>
+                    <Text style={styles.buttonText}>Diff</Text>
+                </TouchableOpacity>
             </View>
 
             <DifficultyModal
@@ -305,7 +301,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingHorizontal: 10,
-        paddingVertical: 0,
+        paddingVertical: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 3000,
         elevation: 10, // For Android
@@ -313,15 +309,6 @@ const styles = StyleSheet.create({
     headerText: {
         color: 'white',
         fontSize: 16,
-    },
-    headerContent: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
     },
     headerLeft: {
         flexDirection: 'row',
@@ -392,19 +379,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingHorizontal: 5,
-        paddingVertical: 0,
+        paddingVertical: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 3000,
         elevation: 10, // For Android
-    },
-    buttonContent: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 5,
-        paddingVertical: 5,
     },
     button: {
         backgroundColor: '#4a90e2',
