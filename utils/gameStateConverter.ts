@@ -60,6 +60,7 @@ export const convertBackendToFrontend = (backendStates: any[]): GameState[] => {
       piles,
       stock,
       completedSequences: backendState.completed_sequences,
+      completedSequencesBySuit: backendState.completed_sequences_by_suit || {},
       moves: backendState.moves,
       difficulty: backendState.difficulty,
       drawsRemaining: backendState.draws_remaining

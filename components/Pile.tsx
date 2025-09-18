@@ -108,7 +108,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
       expansionIncludesLastFaceUpCard = (cards.length - 1) >= expansionStartIndex && (cards.length - 1) < expansionEndIndex;
     }
 
-    // If expansion includes the last face-up card and we're clicking within the expanded range, move immediately
+    // If expansion includes the last face-up card and we're clicking on the last face-up card, move immediately
     if (isCurrentlyExpanded && expansionIncludesLastFaceUpCard && requiresExpansion) {
       const faceUpCardsFromClickedToEnd = faceUpCards.length - faceUpCardIndex;
       
@@ -127,8 +127,8 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
       const expansionStartIndex = faceUpStartIndex + faceUpExpansionStartIndex;
       const expansionEndIndex = faceUpStartIndex + faceUpExpansionEndIndex;
       
-      // Check if current card is within the expanded range
-      if (cardIndex >= expansionStartIndex && cardIndex < expansionEndIndex) {
+      // Only collapse expansion and move immediately if clicking on the last face-up card
+      if (cardIndex === cards.length - 1) {
         // Collapse expansion and move immediately
         setExpandedPile(null);
         setExpandedCardIndex(null);
@@ -149,6 +149,35 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
         onExpansionChange?.(pileIndex);
         return;
       }
+      
+      // If we're currently expanded and clicking on a different card within the expanded range,
+      // change the expansion to center on the clicked card instead of collapsing
+      if (isCurrentlyExpanded && cardIndex !== expandedCardIndex) {
+        const faceUpCardsFromClickedToEnd = faceUpCards.length - faceUpCardIndex;
+        
+        let faceUpExpansionStartIndex, faceUpExpansionEndIndex;
+        
+        if (faceUpCardsFromClickedToEnd >= 7) {
+          faceUpExpansionStartIndex = faceUpCardIndex;
+          faceUpExpansionEndIndex = faceUpCardIndex + 7;
+        } else {
+          const faceUpCardsNeededAbove = 7 - faceUpCardsFromClickedToEnd;
+          faceUpExpansionStartIndex = Math.max(0, faceUpCardIndex - faceUpCardsNeededAbove);
+          faceUpExpansionEndIndex = faceUpCardIndex + faceUpCardsFromClickedToEnd;
+        }
+        
+        // Convert back to absolute card indices
+        const expansionStartIndex = faceUpStartIndex + faceUpExpansionStartIndex;
+        const expansionEndIndex = faceUpStartIndex + faceUpExpansionEndIndex;
+        
+        // Check if current card is within the expanded range
+        if (cardIndex >= expansionStartIndex && cardIndex < expansionEndIndex) {
+          // Change expansion to center on the clicked card
+          setExpandedCardIndex(cardIndex);
+          return;
+        }
+      }
+      
       // Already expanded on this card: collapse then proceed to move
       setExpandedPile(null);
       setExpandedCardIndex(null);

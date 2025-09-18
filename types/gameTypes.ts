@@ -17,6 +17,7 @@ export interface GameState {
   piles: Pile[];
   stock: Card[];
   completedSequences: number;
+  completedSequencesBySuit: Record<number, number>; // suit -> count mapping
   moves: number;
   difficulty: number;
   drawsRemaining: number;

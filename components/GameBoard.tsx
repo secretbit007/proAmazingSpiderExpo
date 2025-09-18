@@ -193,8 +193,15 @@ export const GameBoard: React.FC = () => {
         }
     };
 
-    // Function to calculate completed sequences by suit
+    // Function to get completed sequences by suit from backend data
     const getCompletedSequencesBySuit = (gameState: GameState) => {
+        const suitMap: Record<number, string> = {
+            1: 'spades',
+            2: 'clubs', 
+            3: 'hearts',
+            4: 'diamonds',
+        };
+
         const suitCounts = {
             hearts: 0,
             diamonds: 0,
@@ -202,27 +209,11 @@ export const GameBoard: React.FC = () => {
             spades: 0
         };
 
-        // Check each pile for completed sequences
-        gameState.piles.forEach(pile => {
-            if (pile.cards.length >= 13) {
-                // Check if the last 13 cards form a complete sequence
-                const last13Cards = pile.cards.slice(-13);
-                
-                // Check if all cards are face up and of the same suit
-                const allFaceUp = last13Cards.every(card => card.isFaceUp);
-                const firstSuit = last13Cards[0].suit;
-                const allSameSuit = last13Cards.every(card => card.suit === firstSuit);
-                
-                if (allFaceUp && allSameSuit) {
-                    // Check if they form a descending sequence from K to A
-                    const expectedRanks = ['K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2', 'A'];
-                    const actualRanks = last13Cards.map(card => card.rank);
-                    const isCompleteSequence = expectedRanks.every((rank, index) => rank === actualRanks[index]);
-                    
-                    if (isCompleteSequence) {
-                        suitCounts[firstSuit]++;
-                    }
-                }
+        // Convert backend suit numbers to frontend suit names
+        Object.entries(gameState.completedSequencesBySuit).forEach(([suitNumber, count]) => {
+            const suitName = suitMap[parseInt(suitNumber)] as keyof typeof suitCounts;
+            if (suitName) {
+                suitCounts[suitName] = count;
             }
         });
 
