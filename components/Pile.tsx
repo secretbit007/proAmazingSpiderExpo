@@ -151,13 +151,6 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
     }
   };
 
-  const handlePileContainerPress = () => {
-    // Only collapse if this pile is currently expanded
-    if (expandedPile === pileIndex && expandedCardIndex !== null) {
-      setExpandedPile(null);
-      setExpandedCardIndex(null);
-    }
-  };
 
   // Function to collapse this pile's expansion
   const collapseExpansion = () => {
@@ -342,49 +335,47 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
   const interactiveStartIndex = getInteractiveStartIndex();
 
   return (
-    <TouchableWithoutFeedback onPress={handlePileContainerPress}>
-      <View style={styles.pileContainer} onLayout={onLayout}>
-        {cards.map((card, cardIndex) => {
-          const isInteractive = cardIndex >= interactiveStartIndex;
-          const isHovered = hoveredCard?.pileIndex === pileIndex && 
-                            hoveredCard?.cardIndex === cardIndex;
-          const isInExpandedRange = isCardInExpandedRange(cardIndex);
-          const isPileExpanded = expandedPile === pileIndex && expandedCardIndex !== null;
+    <View style={styles.pileContainer} onLayout={onLayout}>
+      {cards.map((card, cardIndex) => {
+        const isInteractive = cardIndex >= interactiveStartIndex;
+        const isHovered = hoveredCard?.pileIndex === pileIndex && 
+                          hoveredCard?.cardIndex === cardIndex;
+        const isInExpandedRange = isCardInExpandedRange(cardIndex);
+        const isPileExpanded = expandedPile === pileIndex && expandedCardIndex !== null;
 
-          const topPosition = calculateTopPosition(cardIndex);
+        const topPosition = calculateTopPosition(cardIndex);
 
-          return (
-            <TouchableWithoutFeedback
-              key={`pile-${pileIndex}-card-${cardIndex}`}
-              onPress={() => handleCardPress(cardIndex)}
-              onPressIn={() => isInteractive && handleHover(cardIndex, true)}
-              onPressOut={() => isInteractive && handleHover(cardIndex, false)}
-              disabled={!isInteractive || disabled}
-            >
-              <View style={[
-                styles.cardWrapper,
-                {
-                  zIndex: getCardZIndex(cardIndex),
-                  top: topPosition,
-                  position: 'absolute',
-                }
-              ]}>
-                <CardComponent
-                  card={card}
-                  isHovered={isHovered}
-                  isInteractive={isInteractive && !disabled}
-                  style={[
-                    isHovered && styles.hoveredCard,
-                    !isInteractive && styles.nonInteractiveCard,
-                    isPileExpanded && !isInExpandedRange && styles.unexpandedCard,
-                  ]}
-                />
-              </View>
-            </TouchableWithoutFeedback>
-          );
-        })}
-      </View>
-    </TouchableWithoutFeedback>
+        return (
+          <TouchableWithoutFeedback
+            key={`pile-${pileIndex}-card-${cardIndex}`}
+            onPress={() => handleCardPress(cardIndex)}
+            onPressIn={() => isInteractive && handleHover(cardIndex, true)}
+            onPressOut={() => isInteractive && handleHover(cardIndex, false)}
+            disabled={!isInteractive || disabled}
+          >
+            <View style={[
+              styles.cardWrapper,
+              {
+                zIndex: getCardZIndex(cardIndex),
+                top: topPosition,
+                position: 'absolute',
+              }
+            ]}>
+              <CardComponent
+                card={card}
+                isHovered={isHovered}
+                isInteractive={isInteractive && !disabled}
+                style={[
+                  isHovered && styles.hoveredCard,
+                  !isInteractive && styles.nonInteractiveCard,
+                  isPileExpanded && !isInExpandedRange && styles.unexpandedCard,
+                ]}
+              />
+            </View>
+          </TouchableWithoutFeedback>
+        );
+      })}
+    </View>
   );
 });
 
