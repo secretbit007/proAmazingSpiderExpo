@@ -15,6 +15,7 @@ export const GameBoard: React.FC = () => {
     const [hoveredCard, setHoveredCard] = useState<{ pileIndex: number; cardIndex: number } | null>(null);
     const [showDifficultyModal, setShowDifficultyModal] = useState<boolean>(false);
     const [currentDifficulty, setCurrentDifficulty] = useState<number>(0); // Default to Easy
+    const [expandedPileIndex, setExpandedPileIndex] = useState<number | null>(null);
     const pileRefs = useRef<(PileRef | null)[]>([]);
 
     useEffect(() => {
@@ -175,6 +176,23 @@ export const GameBoard: React.FC = () => {
                 pileRef.collapseExpansion();
             }
         });
+        setExpandedPileIndex(null);
+    };
+
+    const handlePileExpansionChange = (pileIndex: number | null) => {
+        setExpandedPileIndex(pileIndex);
+    };
+
+    const handleTouchEvent = (targetPileIndex: number | null) => {
+        // If there's an expanded pile and the touch is not on that pile, collapse it
+        if (expandedPileIndex !== null && expandedPileIndex !== targetPileIndex) {
+            pileRefs.current.forEach(pileRef => {
+                if (pileRef) {
+                    pileRef.collapseExpansion();
+                }
+            });
+            setExpandedPileIndex(null);
+        }
     };
 
     if (loading) {
@@ -257,6 +275,8 @@ export const GameBoard: React.FC = () => {
                                 hoveredCard={hoveredCard}
                                 onCardPress={handleCardPress}
                                 onCardHover={handleCardHover}
+                                onExpansionChange={handlePileExpansionChange}
+                                onTouchEvent={handleTouchEvent}
                             />
                         ))}
                     </View>

@@ -9,6 +9,8 @@ interface PileProps {
   hoveredCard: { pileIndex: number; cardIndex: number } | null;
   onCardPress?: (pileIndex: number, cardIndex: number) => void;
   onCardHover?: (pileIndex: number, cardIndex: number, isHovered: boolean) => void;
+  onExpansionChange?: (pileIndex: number | null) => void;
+  onTouchEvent?: (targetPileIndex: number | null) => void;
   disabled?: boolean;
 }
 
@@ -22,6 +24,8 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
   hoveredCard,
   onCardPress,
   onCardHover,
+  onExpansionChange,
+  onTouchEvent,
   disabled = false,
 }, ref) => {
   const [dimensions, setDimensions] = React.useState({ width: 80, height: 120 });
@@ -34,9 +38,10 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
     if (cards.length > prevLengthRef.current) {
       setExpandedPile(null);
       setExpandedCardIndex(null);
+      onExpansionChange?.(null);
     }
     prevLengthRef.current = cards.length;
-  }, [cards.length]);
+  }, [cards.length, onExpansionChange]);
 
   const handleCardPress = (cardIndex: number) => {
     if (disabled) return;
@@ -51,6 +56,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
       if (expandedPile !== null || expandedCardIndex !== null) {
         setExpandedPile(null);
         setExpandedCardIndex(null);
+        onExpansionChange?.(null);
       }
       if (onCardPress) {
         onCardPress(pileIndex, cardIndex);
@@ -113,6 +119,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
         // Collapse expansion and move immediately
         setExpandedPile(null);
         setExpandedCardIndex(null);
+        onExpansionChange?.(null);
         if (onCardPress) {
           onCardPress(pileIndex, cardIndex);
         }
@@ -126,16 +133,19 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
       if (!isExpandedOnThisCard) {
         setExpandedPile(pileIndex);
         setExpandedCardIndex(cardIndex);
+        onExpansionChange?.(pileIndex);
         return;
       }
       // Already expanded on this card: collapse then proceed to move
       setExpandedPile(null);
       setExpandedCardIndex(null);
+      onExpansionChange?.(null);
     } else {
       // Threshold not met: ensure not expanded
       if (expandedPile !== null || expandedCardIndex !== null) {
         setExpandedPile(null);
         setExpandedCardIndex(null);
+        onExpansionChange?.(null);
       }
     }
 
@@ -157,6 +167,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
     if (expandedPile === pileIndex && expandedCardIndex !== null) {
       setExpandedPile(null);
       setExpandedCardIndex(null);
+      onExpansionChange?.(null);
     }
   };
 
@@ -335,8 +346,9 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
   const interactiveStartIndex = getInteractiveStartIndex();
 
   return (
-    <View style={styles.pileContainer} onLayout={onLayout}>
-      {cards.map((card, cardIndex) => {
+    <TouchableWithoutFeedback onPress={() => onTouchEvent?.(pileIndex)}>
+      <View style={styles.pileContainer} onLayout={onLayout}>
+        {cards.map((card, cardIndex) => {
         const isInteractive = cardIndex >= interactiveStartIndex;
         const isHovered = hoveredCard?.pileIndex === pileIndex && 
                           hoveredCard?.cardIndex === cardIndex;
@@ -348,7 +360,10 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
         return (
           <TouchableWithoutFeedback
             key={`pile-${pileIndex}-card-${cardIndex}`}
-            onPress={() => handleCardPress(cardIndex)}
+            onPress={() => {
+              onTouchEvent?.(pileIndex);
+              handleCardPress(cardIndex);
+            }}
             onPressIn={() => isInteractive && handleHover(cardIndex, true)}
             onPressOut={() => isInteractive && handleHover(cardIndex, false)}
             disabled={!isInteractive || disabled}
@@ -375,7 +390,8 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
           </TouchableWithoutFeedback>
         );
       })}
-    </View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 });
 
