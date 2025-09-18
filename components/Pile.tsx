@@ -50,9 +50,14 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
 
     if (!isInteractive) return;
 
-    // If clicked card is the last (top) card, do not expand; move immediately
-    const isLastCard = cardIndex === cards.length - 1;
-    if (isLastCard) {
+    // Get face-up cards range for expansion calculations
+    const faceUpStartIndex = getInteractiveStartIndex();
+    const faceUpCards = cards.slice(faceUpStartIndex);
+    const faceUpCardIndex = cardIndex - faceUpStartIndex; // Convert to face-up cards index
+
+    // If clicked card is the last face-up card, do not expand; move immediately
+    const isLastFaceUpCard = cardIndex === cards.length - 1;
+    if (isLastFaceUpCard) {
       if (expandedPile !== null || expandedCardIndex !== null) {
         setExpandedPile(null);
         setExpandedCardIndex(null);
@@ -74,45 +79,53 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
 
     const isExpandedOnThisCard = expandedPile === pileIndex && expandedCardIndex === cardIndex;
 
-    // Check if we're currently in an expanded state and if the expansion includes the last card
+    // Check if we're currently in an expanded state and if the expansion includes the last face-up card
     const isCurrentlyExpanded = expandedPile === pileIndex && expandedCardIndex !== null;
-    let expansionIncludesLastCard = false;
+    let expansionIncludesLastFaceUpCard = false;
     
     if (isCurrentlyExpanded && requiresExpansion) {
-      // Calculate the 7-card expansion range (same logic as calculateGapSize)
-      const cardsFromClickedToEnd = cards.length - expandedCardIndex;
+      // Calculate the 7-card expansion range for face-up cards only
+      const faceUpCardsFromClickedToEnd = faceUpCards.length - faceUpCardIndex;
       
-      let expansionStartIndex, expansionEndIndex;
+      let faceUpExpansionStartIndex, faceUpExpansionEndIndex;
       
-      if (cardsFromClickedToEnd >= 7) {
-        // Enough cards from clicked position, expand 7 cards from clicked card
-        expansionStartIndex = expandedCardIndex;
-        expansionEndIndex = expandedCardIndex + 7;
+      if (faceUpCardsFromClickedToEnd >= 7) {
+        // Enough face-up cards from clicked position, expand 7 face-up cards from clicked card
+        faceUpExpansionStartIndex = faceUpCardIndex;
+        faceUpExpansionEndIndex = faceUpCardIndex + 7;
       } else {
-        // Not enough cards from clicked position, expand cards above as well
-        const cardsNeededAbove = 7 - cardsFromClickedToEnd;
-        expansionStartIndex = Math.max(0, expandedCardIndex - cardsNeededAbove);
-        expansionEndIndex = expandedCardIndex + cardsFromClickedToEnd;
+        // Not enough face-up cards from clicked position, expand face-up cards above as well
+        const faceUpCardsNeededAbove = 7 - faceUpCardsFromClickedToEnd;
+        faceUpExpansionStartIndex = Math.max(0, faceUpCardIndex - faceUpCardsNeededAbove);
+        faceUpExpansionEndIndex = faceUpCardIndex + faceUpCardsFromClickedToEnd;
       }
       
-      // Check if the expansion includes the last card (cards.length - 1)
-      expansionIncludesLastCard = (cards.length - 1) >= expansionStartIndex && (cards.length - 1) < expansionEndIndex;
+      // Convert back to absolute card indices
+      const expansionStartIndex = faceUpStartIndex + faceUpExpansionStartIndex;
+      const expansionEndIndex = faceUpStartIndex + faceUpExpansionEndIndex;
+      
+      // Check if the expansion includes the last face-up card
+      expansionIncludesLastFaceUpCard = (cards.length - 1) >= expansionStartIndex && (cards.length - 1) < expansionEndIndex;
     }
 
-    // If expansion includes the last card and we're clicking within the expanded range, move immediately
-    if (isCurrentlyExpanded && expansionIncludesLastCard && requiresExpansion) {
-      const cardsFromClickedToEnd = cards.length - expandedCardIndex;
+    // If expansion includes the last face-up card and we're clicking within the expanded range, move immediately
+    if (isCurrentlyExpanded && expansionIncludesLastFaceUpCard && requiresExpansion) {
+      const faceUpCardsFromClickedToEnd = faceUpCards.length - faceUpCardIndex;
       
-      let expansionStartIndex, expansionEndIndex;
+      let faceUpExpansionStartIndex, faceUpExpansionEndIndex;
       
-      if (cardsFromClickedToEnd >= 7) {
-        expansionStartIndex = expandedCardIndex;
-        expansionEndIndex = expandedCardIndex + 7;
+      if (faceUpCardsFromClickedToEnd >= 7) {
+        faceUpExpansionStartIndex = faceUpCardIndex;
+        faceUpExpansionEndIndex = faceUpCardIndex + 7;
       } else {
-        const cardsNeededAbove = 7 - cardsFromClickedToEnd;
-        expansionStartIndex = Math.max(0, expandedCardIndex - cardsNeededAbove);
-        expansionEndIndex = expandedCardIndex + cardsFromClickedToEnd;
+        const faceUpCardsNeededAbove = 7 - faceUpCardsFromClickedToEnd;
+        faceUpExpansionStartIndex = Math.max(0, faceUpCardIndex - faceUpCardsNeededAbove);
+        faceUpExpansionEndIndex = faceUpCardIndex + faceUpCardsFromClickedToEnd;
       }
+      
+      // Convert back to absolute card indices
+      const expansionStartIndex = faceUpStartIndex + faceUpExpansionStartIndex;
+      const expansionEndIndex = faceUpStartIndex + faceUpExpansionEndIndex;
       
       // Check if current card is within the expanded range
       if (cardIndex >= expansionStartIndex && cardIndex < expansionEndIndex) {
@@ -195,28 +208,37 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
 
     const baseGapSize = Math.min(gapByWidth, gapByHeight);
     
-    // If this pile is expanded, calculate the 7-card expansion range
+    // If this pile is expanded, calculate the 7-card expansion range for face-up cards only
     if (expandedPile === pileIndex && expandedCardIndex !== null && baseGapSize <= gapByWidth * 0.85) {
-      // Calculate how many cards are available from clicked card to end
-      const cardsFromClickedToEnd = cards.length - expandedCardIndex;
+      // Get face-up cards range for expansion calculations
+      const faceUpStartIndex = getInteractiveStartIndex();
+      const faceUpCards = cards.slice(faceUpStartIndex);
+      const faceUpCardIndex = expandedCardIndex - faceUpStartIndex; // Convert to face-up cards index
       
-      // Determine the start and end indices for the 7-card expansion
-      let expansionStartIndex, expansionEndIndex;
+      // Calculate how many face-up cards are available from clicked card to end
+      const faceUpCardsFromClickedToEnd = faceUpCards.length - faceUpCardIndex;
       
-      if (cardsFromClickedToEnd >= 7) {
-        // Enough cards from clicked position, expand 7 cards from clicked card
-        expansionStartIndex = expandedCardIndex;
-        expansionEndIndex = expandedCardIndex + 7;
+      // Determine the start and end indices for the 7-card expansion (face-up cards only)
+      let faceUpExpansionStartIndex, faceUpExpansionEndIndex;
+      
+      if (faceUpCardsFromClickedToEnd >= 7) {
+        // Enough face-up cards from clicked position, expand 7 face-up cards from clicked card
+        faceUpExpansionStartIndex = faceUpCardIndex;
+        faceUpExpansionEndIndex = faceUpCardIndex + 7;
       } else {
-        // Not enough cards from clicked position, expand cards above as well
-        const cardsNeededAbove = 7 - cardsFromClickedToEnd;
-        expansionStartIndex = Math.max(0, expandedCardIndex - cardsNeededAbove);
-        expansionEndIndex = expandedCardIndex + cardsFromClickedToEnd;
+        // Not enough face-up cards from clicked position, expand face-up cards above as well
+        const faceUpCardsNeededAbove = 7 - faceUpCardsFromClickedToEnd;
+        faceUpExpansionStartIndex = Math.max(0, faceUpCardIndex - faceUpCardsNeededAbove);
+        faceUpExpansionEndIndex = faceUpCardIndex + faceUpCardsFromClickedToEnd;
       }
+      
+      // Convert back to absolute card indices
+      const expansionStartIndex = faceUpStartIndex + faceUpExpansionStartIndex;
+      const expansionEndIndex = faceUpStartIndex + faceUpExpansionEndIndex;
       
       // Check if current card is within the 7-card expansion range
       if (cardIndex >= expansionStartIndex && cardIndex < expansionEndIndex) {
-        return gapByWidth; // Expanded gap size for the 7 cards
+        return gapByWidth; // Expanded gap size for the 7 face-up cards
       }
       
       // For unexpanded cards, check if we need to reduce gap to prevent overflow
@@ -274,26 +296,35 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
       const cardHeight = dimensions.width * 80 / 120;
       const gapByWidth = dimensions.width * 0.3;
       const cardCount = cards.length;
-      const gapByHeight = (dimensions.height - cardHeight) / cardCount;
+      const gapByHeight = (dimensions.height - cardHeight * 2) / cardCount;
       const baseGapSize = Math.min(gapByWidth, gapByHeight);
       const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
       
       if (requiresExpansion) {
-        // Calculate the 7-card expansion range (same logic as calculateGapSize)
-        const cardsFromClickedToEnd = cards.length - expandedCardIndex;
+        // Get face-up cards range for expansion calculations
+        const faceUpStartIndex = getInteractiveStartIndex();
+        const faceUpCards = cards.slice(faceUpStartIndex);
+        const faceUpCardIndex = expandedCardIndex - faceUpStartIndex; // Convert to face-up cards index
         
-        let expansionStartIndex, expansionEndIndex;
+        // Calculate the 7-card expansion range for face-up cards only
+        const faceUpCardsFromClickedToEnd = faceUpCards.length - faceUpCardIndex;
         
-        if (cardsFromClickedToEnd >= 7) {
-          // Enough cards from clicked position, expand 7 cards from clicked card
-          expansionStartIndex = expandedCardIndex;
-          expansionEndIndex = expandedCardIndex + 7;
+        let faceUpExpansionStartIndex, faceUpExpansionEndIndex;
+        
+        if (faceUpCardsFromClickedToEnd >= 7) {
+          // Enough face-up cards from clicked position, expand 7 face-up cards from clicked card
+          faceUpExpansionStartIndex = faceUpCardIndex;
+          faceUpExpansionEndIndex = faceUpCardIndex + 7;
         } else {
-          // Not enough cards from clicked position, expand cards above as well
-          const cardsNeededAbove = 7 - cardsFromClickedToEnd;
-          expansionStartIndex = Math.max(0, expandedCardIndex - cardsNeededAbove);
-          expansionEndIndex = expandedCardIndex + cardsFromClickedToEnd;
+          // Not enough face-up cards from clicked position, expand face-up cards above as well
+          const faceUpCardsNeededAbove = 7 - faceUpCardsFromClickedToEnd;
+          faceUpExpansionStartIndex = Math.max(0, faceUpCardIndex - faceUpCardsNeededAbove);
+          faceUpExpansionEndIndex = faceUpCardIndex + faceUpCardsFromClickedToEnd;
         }
+        
+        // Convert back to absolute card indices
+        const expansionStartIndex = faceUpStartIndex + faceUpExpansionStartIndex;
+        const expansionEndIndex = faceUpStartIndex + faceUpExpansionEndIndex;
         
         // Check if current card is within the 7-card expansion range
         return cardIndex >= expansionStartIndex && cardIndex < expansionEndIndex;
@@ -309,26 +340,35 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
       const cardHeight = dimensions.width * 80 / 120;
       const gapByWidth = dimensions.width * 0.3;
       const cardCount = cards.length;
-      const gapByHeight = (dimensions.height - cardHeight) / cardCount;
+      const gapByHeight = (dimensions.height - cardHeight * 2) / cardCount;
       const baseGapSize = Math.min(gapByWidth, gapByHeight);
       const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
       
       if (requiresExpansion) {
-        // Calculate the 7-card expansion range (same logic as calculateGapSize)
-        const cardsFromClickedToEnd = cards.length - expandedCardIndex;
+        // Get face-up cards range for expansion calculations
+        const faceUpStartIndex = getInteractiveStartIndex();
+        const faceUpCards = cards.slice(faceUpStartIndex);
+        const faceUpCardIndex = expandedCardIndex - faceUpStartIndex; // Convert to face-up cards index
         
-        let expansionStartIndex, expansionEndIndex;
+        // Calculate the 7-card expansion range for face-up cards only
+        const faceUpCardsFromClickedToEnd = faceUpCards.length - faceUpCardIndex;
         
-        if (cardsFromClickedToEnd >= 7) {
-          // Enough cards from clicked position, expand 7 cards from clicked card
-          expansionStartIndex = expandedCardIndex;
-          expansionEndIndex = expandedCardIndex + 7;
+        let faceUpExpansionStartIndex, faceUpExpansionEndIndex;
+        
+        if (faceUpCardsFromClickedToEnd >= 7) {
+          // Enough face-up cards from clicked position, expand 7 face-up cards from clicked card
+          faceUpExpansionStartIndex = faceUpCardIndex;
+          faceUpExpansionEndIndex = faceUpCardIndex + 7;
         } else {
-          // Not enough cards from clicked position, expand cards above as well
-          const cardsNeededAbove = 7 - cardsFromClickedToEnd;
-          expansionStartIndex = Math.max(0, expandedCardIndex - cardsNeededAbove);
-          expansionEndIndex = expandedCardIndex + cardsFromClickedToEnd;
+          // Not enough face-up cards from clicked position, expand face-up cards above as well
+          const faceUpCardsNeededAbove = 7 - faceUpCardsFromClickedToEnd;
+          faceUpExpansionStartIndex = Math.max(0, faceUpCardIndex - faceUpCardsNeededAbove);
+          faceUpExpansionEndIndex = faceUpCardIndex + faceUpCardsFromClickedToEnd;
         }
+        
+        // Convert back to absolute card indices
+        const expansionStartIndex = faceUpStartIndex + faceUpExpansionStartIndex;
+        const expansionEndIndex = faceUpStartIndex + faceUpExpansionEndIndex;
         
         // Check if current card is within the 7-card expansion range
         if (cardIndex >= expansionStartIndex && cardIndex < expansionEndIndex) {

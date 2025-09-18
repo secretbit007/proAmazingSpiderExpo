@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
 import { IMAGES, preloadImages } from '../utils/assets';
@@ -8,7 +7,6 @@ import { DifficultyModal } from './DifficultyModal';
 import { Pile, PileRef } from './Pile';
 
 export const GameBoard: React.FC = () => {
-    const insets = useSafeAreaInsets();
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -195,6 +193,42 @@ export const GameBoard: React.FC = () => {
         }
     };
 
+    // Function to calculate completed sequences by suit
+    const getCompletedSequencesBySuit = (gameState: GameState) => {
+        const suitCounts = {
+            hearts: 0,
+            diamonds: 0,
+            clubs: 0,
+            spades: 0
+        };
+
+        // Check each pile for completed sequences
+        gameState.piles.forEach(pile => {
+            if (pile.cards.length >= 13) {
+                // Check if the last 13 cards form a complete sequence
+                const last13Cards = pile.cards.slice(-13);
+                
+                // Check if all cards are face up and of the same suit
+                const allFaceUp = last13Cards.every(card => card.isFaceUp);
+                const firstSuit = last13Cards[0].suit;
+                const allSameSuit = last13Cards.every(card => card.suit === firstSuit);
+                
+                if (allFaceUp && allSameSuit) {
+                    // Check if they form a descending sequence from K to A
+                    const expectedRanks = ['K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2', 'A'];
+                    const actualRanks = last13Cards.map(card => card.rank);
+                    const isCompleteSequence = expectedRanks.every((rank, index) => rank === actualRanks[index]);
+                    
+                    if (isCompleteSequence) {
+                        suitCounts[firstSuit]++;
+                    }
+                }
+            }
+        });
+
+        return suitCounts;
+    };
+
     if (loading) {
         return (
             <View style={[styles.container, styles.center]}>
@@ -256,10 +290,28 @@ export const GameBoard: React.FC = () => {
                 </View>
                 
                 <View style={styles.header}>
-                    <Text style={styles.headerText}>Moves: {gameState.moves}</Text>
-                    <Text style={styles.headerText}>Difficulty: {currentDifficulty}</Text>
-                    <Text style={styles.headerText}>Completed: {gameState.completedSequences}/8</Text>
-                    <Text style={styles.headerText}>Stack: {gameState.drawsRemaining}/5</Text>
+                    <View style={styles.headerLeft}>
+                        <Text style={styles.headerText}>Moves: {gameState.moves}  |  Difficulty: {currentDifficulty}  |  Stack: {gameState.drawsRemaining}/5  |  Completed: {gameState.completedSequences}/8</Text>
+                    </View>
+                    
+                    <View style={styles.headerRight}>
+                        {(() => {
+                            const completedSequences = getCompletedSequencesBySuit(gameState);
+                            const suits = [
+                                { suit: 'hearts', image: IMAGES.hearts },
+                                { suit: 'diamonds', image: IMAGES.diamonds },
+                                { suit: 'clubs', image: IMAGES.clubs },
+                                { suit: 'spades', image: IMAGES.spades }
+                            ];
+                            
+                            return suits.map(({ suit, image }) => (
+                                <View key={suit} style={styles.suitContainer}>
+                                    <Image source={image} style={styles.suitImage} />
+                                    <Text style={styles.suitText}>{completedSequences[suit as keyof typeof completedSequences]}/2</Text>
+                                </View>
+                            ));
+                        })()}
+                    </View>
                 </View>
 
                 <View style={styles.container}>
@@ -331,15 +383,46 @@ const styles = StyleSheet.create({
         right: 0,
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: 10,
         paddingVertical: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 3000,
         elevation: 10, // For Android
     },
+    headerLeft: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+    },
+    headerRight: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+    },
     headerText: {
         color: 'white',
-        fontSize: 16,
+        fontSize: 14,
+        marginVertical: 1,
+    },
+    suitImage: {
+        width: 24,
+        height: 24,
+        marginHorizontal: 4,
+        tintColor: 'white',
+    },
+    suitContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginHorizontal: 2,
+    },
+    suitText: {
+        color: 'white',
+        fontSize: 10,
+        marginLeft: 2,
+        fontWeight: 'bold',
     },
     bottomSection: {
         flexDirection: 'row',
@@ -362,7 +445,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         flex: 1,
         marginHorizontal: 10,
-        marginTop: 60, // Space for the header bar
+        marginTop: 50, // Space for the header bar
         marginBottom: 60, // Space for the button bar
     },
     loadingText: {
@@ -410,7 +493,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
         flex: 1,
-        marginHorizontal: 0,
+        marginHorizontal: 10,
         alignItems: 'center',
     },
     buttonText: {
