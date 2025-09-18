@@ -12,14 +12,18 @@ interface PileProps {
   disabled?: boolean;
 }
 
-export const Pile: React.FC<PileProps> = ({
+export interface PileRef {
+  collapseExpansion: () => void;
+}
+
+export const Pile = React.forwardRef<PileRef, PileProps>(({
   cards,
   pileIndex,
   hoveredCard,
   onCardPress,
   onCardHover,
   disabled = false,
-}) => {
+}, ref) => {
   const [dimensions, setDimensions] = React.useState({ width: 80, height: 120 });
   const [expandedPile, setExpandedPile] = React.useState<number | null>(null);
   const [expandedCardIndex, setExpandedCardIndex] = React.useState<number | null>(null);
@@ -154,6 +158,19 @@ export const Pile: React.FC<PileProps> = ({
       setExpandedCardIndex(null);
     }
   };
+
+  // Function to collapse this pile's expansion
+  const collapseExpansion = () => {
+    if (expandedPile === pileIndex && expandedCardIndex !== null) {
+      setExpandedPile(null);
+      setExpandedCardIndex(null);
+    }
+  };
+
+  // Expose collapse function to parent via ref
+  React.useImperativeHandle(ref, () => ({
+    collapseExpansion
+  }), [expandedPile, expandedCardIndex, pileIndex]);
 
   // Find the first face-up card in the pile
   const getInteractiveStartIndex = () => {
@@ -369,7 +386,7 @@ export const Pile: React.FC<PileProps> = ({
       </View>
     </TouchableWithoutFeedback>
   );
-};
+});
 
 const styles = StyleSheet.create({
   pileContainer: {

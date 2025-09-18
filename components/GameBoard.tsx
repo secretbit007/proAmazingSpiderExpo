@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
 import { IMAGES, preloadImages } from '../utils/assets';
 import { DifficultyModal } from './DifficultyModal';
-import { Pile } from './Pile';
+import { Pile, PileRef } from './Pile';
 
 export const GameBoard: React.FC = () => {
     const insets = useSafeAreaInsets();
@@ -15,6 +15,7 @@ export const GameBoard: React.FC = () => {
     const [hoveredCard, setHoveredCard] = useState<{ pileIndex: number; cardIndex: number } | null>(null);
     const [showDifficultyModal, setShowDifficultyModal] = useState<boolean>(false);
     const [currentDifficulty, setCurrentDifficulty] = useState<number>(0); // Default to Easy
+    const pileRefs = useRef<(PileRef | null)[]>([]);
 
     useEffect(() => {
         const initGame = async () => {
@@ -167,6 +168,15 @@ export const GameBoard: React.FC = () => {
         }
     };
 
+    const handleOutsideClick = () => {
+        // Collapse all expanded piles
+        pileRefs.current.forEach(pileRef => {
+            if (pileRef) {
+                pileRef.collapseExpansion();
+            }
+        });
+    };
+
     if (loading) {
         return (
             <View style={[styles.container, styles.center]}>
@@ -213,66 +223,71 @@ export const GameBoard: React.FC = () => {
     }
 
     return (
-        <ImageBackground
-            source={IMAGES.background}
-            style={styles.backgroundImage}
-            resizeMode="cover"
-        >
-            <View style={styles.logoContainer}>
-                <Image
-                    source={IMAGES.background_logo}
-                    style={styles.logoImage}
-                    resizeMode="center"
-                />
-            </View>
-            
-            <View style={styles.header}>
-                <Text style={styles.headerText}>Moves: {gameState.moves}</Text>
-                <Text style={styles.headerText}>Difficulty: {currentDifficulty}</Text>
-                <Text style={styles.headerText}>Completed: {gameState.completedSequences}/8</Text>
-                <Text style={styles.headerText}>Stack: {gameState.drawsRemaining}/5</Text>
-            </View>
-
-            <View style={styles.container}>
-                <View style={styles.pilesContainer}>
-                    {gameState.piles.map((pile, pileIndex) => (
-                        <Pile
-                            key={pileIndex}
-                            cards={pile.cards}
-                            pileIndex={pileIndex}
-                            hoveredCard={hoveredCard}
-                            onCardPress={handleCardPress}
-                            onCardHover={handleCardHover}
-                        />
-                    ))}
+        <TouchableWithoutFeedback onPress={handleOutsideClick}>
+            <ImageBackground
+                source={IMAGES.background}
+                style={styles.backgroundImage}
+                resizeMode="cover"
+            >
+                <View style={styles.logoContainer}>
+                    <Image
+                        source={IMAGES.background_logo}
+                        style={styles.logoImage}
+                        resizeMode="center"
+                    />
                 </View>
-            </View>
+                
+                <View style={styles.header}>
+                    <Text style={styles.headerText}>Moves: {gameState.moves}</Text>
+                    <Text style={styles.headerText}>Difficulty: {currentDifficulty}</Text>
+                    <Text style={styles.headerText}>Completed: {gameState.completedSequences}/8</Text>
+                    <Text style={styles.headerText}>Stack: {gameState.drawsRemaining}/5</Text>
+                </View>
 
-            <View style={styles.buttonBar}>
-                <TouchableOpacity style={styles.button} onPress={handleNewGame}>
-                    <Text style={styles.buttonText}>New</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={handleDealCards}>
-                    <Text style={styles.buttonText}>Stack</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={handleSolve}>
-                    <Text style={styles.buttonText}>Solve</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={handleUndo}>
-                    <Text style={styles.buttonText}>Undo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={handleDifficulty}>
-                    <Text style={styles.buttonText}>Diff</Text>
-                </TouchableOpacity>
-            </View>
+                <View style={styles.container}>
+                    <View style={styles.pilesContainer}>
+                        {gameState.piles.map((pile, pileIndex) => (
+                            <Pile
+                                key={pileIndex}
+                                ref={(ref) => {
+                                    pileRefs.current[pileIndex] = ref;
+                                }}
+                                cards={pile.cards}
+                                pileIndex={pileIndex}
+                                hoveredCard={hoveredCard}
+                                onCardPress={handleCardPress}
+                                onCardHover={handleCardHover}
+                            />
+                        ))}
+                    </View>
+                </View>
 
-            <DifficultyModal
-                visible={showDifficultyModal}
-                onClose={() => setShowDifficultyModal(false)}
-                onDifficultySelect={handleDifficultySelect}
-                currentDifficulty={currentDifficulty}
-            />
-        </ImageBackground>
+                <View style={styles.buttonBar}>
+                    <TouchableOpacity style={styles.button} onPress={handleNewGame}>
+                        <Text style={styles.buttonText}>New</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.button} onPress={handleDealCards}>
+                        <Text style={styles.buttonText}>Stack</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.button} onPress={handleSolve}>
+                        <Text style={styles.buttonText}>Solve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.button} onPress={handleUndo}>
+                        <Text style={styles.buttonText}>Undo</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.button} onPress={handleDifficulty}>
+                        <Text style={styles.buttonText}>Diff</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <DifficultyModal
+                    visible={showDifficultyModal}
+                    onClose={() => setShowDifficultyModal(false)}
+                    onDifficultySelect={handleDifficultySelect}
+                    currentDifficulty={currentDifficulty}
+                />
+            </ImageBackground>
+        </TouchableWithoutFeedback>
     );
 };
 
