@@ -368,10 +368,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     header: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -435,9 +431,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         flex: 1,
-        marginHorizontal: 10,
-        marginTop: 50, // Space for the header bar
-        marginBottom: 60, // Space for the button bar
+        marginHorizontal: 5,
+        marginTop: 5,
     },
     loadingText: {
         color: 'white',
@@ -467,10 +462,6 @@ const styles = StyleSheet.create({
         paddingBottom: 10,
     },
     buttonBar: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingHorizontal: 5,
@@ -484,7 +475,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
         flex: 1,
-        marginHorizontal: 10,
+        marginHorizontal: 5,
         alignItems: 'center',
     },
     buttonText: {

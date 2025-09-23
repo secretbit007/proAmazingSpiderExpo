@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     flex: 1,
     maxWidth: 80,
     position: 'relative',
-    marginHorizontal: 4,
+    marginHorizontal: 1,
   },
   cardWrapper: {
     left: 0,
