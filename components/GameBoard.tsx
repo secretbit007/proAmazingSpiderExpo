@@ -371,8 +371,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 10,
-        paddingVertical: 10,
+        paddingHorizontal: 5,
+        paddingVertical: 5,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 3000,
         elevation: 10, // For Android
@@ -391,12 +391,12 @@ const styles = StyleSheet.create({
     },
     headerText: {
         color: 'white',
-        fontSize: 14,
+        fontSize: 12,
         marginVertical: 1,
     },
     suitImage: {
-        width: 24,
-        height: 24,
+        width: 20,
+        height: 20,
         marginHorizontal: 4,
         tintColor: 'white',
     },
