@@ -382,12 +382,14 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-start',
+        paddingRight: 10
     },
     headerRight: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-end',
+        paddingLeft: 10
     },
     headerText: {
         color: 'white',
@@ -395,8 +397,8 @@ const styles = StyleSheet.create({
         marginVertical: 1,
     },
     suitImage: {
-        width: 20,
-        height: 20,
+        width: 15,
+        height: 15,
         marginHorizontal: 4,
         tintColor: 'white',
     },
