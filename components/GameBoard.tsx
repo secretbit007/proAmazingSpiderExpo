@@ -26,7 +26,6 @@ export const GameBoard: React.FC = () => {
                 setError(null);
             } catch (err) {
                 setError('Failed to initialize game');
-                // console.error(err);
             } finally {
                 setLoading(false);
             }
@@ -42,9 +41,7 @@ export const GameBoard: React.FC = () => {
             const newState = await gameService.dealCards();
             setGameState(newState[0]);
         } catch (err) {
-            // console.error('Failed to deal cards:', err);
-        } finally {
-            // setLoading(false);
+            
         }
     };
 
@@ -56,9 +53,7 @@ export const GameBoard: React.FC = () => {
             const newState = await gameService.undoMove();
             setGameState(newState[0]);
         } catch (err) {
-            // console.error('Failed to undo move:', err);
-        } finally {
-            // setLoading(false);
+            
         }
     };
 
@@ -68,7 +63,7 @@ export const GameBoard: React.FC = () => {
             const newState = await gameService.startNewGame(currentDifficulty);
             setGameState(newState[0]);
         } catch (err) {
-            // console.error('Failed to start new game:', err);
+            
         } finally {
             setLoading(false);
         }
@@ -105,12 +100,9 @@ export const GameBoard: React.FC = () => {
                 }
                 return;
             }
-            // If we get here, no valid moves were found
-            // console.log('No valid moves for this card');
         } catch (err) {
-            // console.error('Failed to move card:', err);
+            
         } finally {
-            // setLoading(false);
             setHoveredCard(null);
         }
     };
@@ -142,9 +134,7 @@ export const GameBoard: React.FC = () => {
                 return;
             }
         } catch (err) {
-            // console.error('Failed to solve game:', err);
-        } finally {
-            // setLoading(false);
+            
         }
     };
 
@@ -161,7 +151,6 @@ export const GameBoard: React.FC = () => {
             setError(null);
         } catch (err) {
             setError('Failed to start new game with selected difficulty');
-            // console.error(err);
         } finally {
             setLoading(false);
         }
@@ -231,15 +220,11 @@ export const GameBoard: React.FC = () => {
 
     const handleRetry = async () => {
         try {
-            // setLoading(true);
             setError(null);
             const state = await gameService.startNewGame(1);
             setGameState(state[0]);
         } catch (err) {
             setError('Failed to load game. Please try again.');
-            // console.error(err);
-        } finally {
-            // setLoading(false);
         }
     };
 
