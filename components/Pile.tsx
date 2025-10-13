@@ -323,7 +323,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
     // Check if this pile is expanded and if the card is in the expanded range
     if (expandedPile === pileIndex && expandedCardIndex !== null) {
       const cardHeight = dimensions.width * 80 / 120;
-      const gapByWidth = dimensions.width * 0.3;
+      const gapByWidth = dimensions.width * 0.5;
       const cardCount = cards.length;
       const gapByHeight = (dimensions.height - cardHeight * 2) / cardCount;
       const baseGapSize = Math.min(gapByWidth, gapByHeight);
@@ -367,7 +367,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
     // If this pile is expanded, give expanded cards higher z-index
     if (expandedPile === pileIndex && expandedCardIndex !== null) {
       const cardHeight = dimensions.width * 80 / 120;
-      const gapByWidth = dimensions.width * 0.3;
+      const gapByWidth = dimensions.width * 0.5;
       const cardCount = cards.length;
       const gapByHeight = (dimensions.height - cardHeight * 2) / cardCount;
       const baseGapSize = Math.min(gapByWidth, gapByHeight);
