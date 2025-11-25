@@ -1,7 +1,7 @@
 import { GameState, MoveRequest } from '../types/gameTypes';
 import { sessionStorage } from '../utils/sessionStorage';
 
-const API_BASE_URL = 'https://unfawning-tenley-lissomly.ngrok-free.dev/api/v1';
+const API_BASE_URL = 'https://guntawong1.sydney:8443/api/v1';
 
 const handleResponse = async (response: Response): Promise<any> => {
   if (!response.ok) {
