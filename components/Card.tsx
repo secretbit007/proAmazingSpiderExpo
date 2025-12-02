@@ -53,24 +53,24 @@ export const CardComponent: React.FC<CardProps> = ({
 
           {/* Center suit symbols */}
           <View style={styles.verticalSymbols}>
-            <Image 
+            {/* <Image 
               source={IMAGES[card.suit]} 
               style={[styles.verticalSuit, { tintColor: isRed ? redColor : blackColor, marginVertical: cornerRankSuitVertical }]} 
-            />
+            /> */}
             
             <Image 
               source={IMAGES[card.suit]} 
               style={[styles.centerSuit, { tintColor: isRed ? redColor : blackColor }]} 
             />
             
-            <Image 
+            {/* <Image 
               source={IMAGES[card.suit]} 
               style={[styles.verticalSuit, { 
                 tintColor: isRed ? redColor : blackColor,
                 transform: [{ rotate: '180deg' }] ,
                 marginVertical: cornerRankSuitVertical
               }]} 
-            />
+            /> */}
           </View>
 
           {/* Bottom right corner (upside down rank + suit) */}
