@@ -17,11 +17,11 @@ export const CardComponent: React.FC<CardProps> = ({
   isInteractive = true
 }) => {
   const [dimensions, setDimensions] = React.useState({ width: 80, height: 120 })
-  const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
-  const redColor = '#FF4444';
-  const blackColor = '#333333';
+  const suitColor = card.suit === 'hearts' ? '#FF4444' : 
+                    card.suit === 'diamonds' ? '#494bd8ff' : 
+                    card.suit === 'clubs' ? '#197a29ff' : '#333333';
 
-  const cornerRankFontSize = dimensions.width * 0.225;
+  const cornerRankFontSize = dimensions.width * 0.3;
   const cornerRankSuitVertical = dimensions.width * 0.05;
   const cornerRankSuitHorizontal = dimensions.width * 0.1;
 
@@ -46,7 +46,7 @@ export const CardComponent: React.FC<CardProps> = ({
           
           {/* Top left corner (rank + suit) */}
           <View style={[styles.topLeftCorner, { top: cornerRankSuitVertical, left: cornerRankSuitHorizontal }]}>
-            <Text style={[styles.cornerRank, { color: isRed ? redColor : blackColor, fontSize: cornerRankFontSize }]}>
+            <Text style={[styles.cornerRank, { color: suitColor, fontSize: cornerRankFontSize }]}>
               {card.rank}
             </Text>
           </View>
@@ -60,7 +60,7 @@ export const CardComponent: React.FC<CardProps> = ({
             
             <Image 
               source={IMAGES[card.suit]} 
-              style={[styles.centerSuit, { tintColor: isRed ? redColor : blackColor }]} 
+              style={[styles.centerSuit, { tintColor: suitColor }]} 
             />
             
             {/* <Image 
@@ -75,7 +75,7 @@ export const CardComponent: React.FC<CardProps> = ({
 
           {/* Bottom right corner (upside down rank + suit) */}
           <View style={[styles.bottomRightCorner, { bottom: cornerRankSuitVertical, right: cornerRankSuitHorizontal }]}>
-            <Text style={[styles.cornerRank, { color: isRed ? redColor : blackColor, fontSize: cornerRankFontSize }]}>
+            <Text style={[styles.cornerRank, { color: suitColor, fontSize: cornerRankFontSize }]}>
               {card.rank}
             </Text>
           </View>
