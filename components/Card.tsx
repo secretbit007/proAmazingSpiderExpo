@@ -22,8 +22,9 @@ export const CardComponent: React.FC<CardProps> = ({
                     card.suit === 'clubs' ? '#197a29ff' : '#333333';
 
   const cornerRankFontSize = dimensions.width * 0.3;
-  const cornerSuitSize = dimensions.width * 0.2;
-  const cornerRankSuitVertical = dimensions.width * 0.05;
+  const cornerSuitSize = dimensions.width * 0.25;
+  const cornerSuitVertical = dimensions.width * 0.1;
+  const cornerRankVertical = dimensions.width * 0.05;
   const cornerRankSuitHorizontal = dimensions.width * 0.1;
 
   const onLayout = (event: LayoutChangeEvent) => {
@@ -48,14 +49,14 @@ export const CardComponent: React.FC<CardProps> = ({
           {/* Top row: rank on left, suit on right */}
           
           {/* Top-left corner - Rank */}
-          <View style={[styles.topLeftCorner, { top: cornerRankSuitVertical, left: cornerRankSuitHorizontal }]}>
+          <View style={[styles.topLeftCorner, { top: cornerRankVertical, left: cornerRankSuitHorizontal }]}>
             <Text style={[styles.cornerRank, { color: suitColor, fontSize: cornerRankFontSize }]}>
               {card.rank}
             </Text>
           </View>
           
           {/* Top-right corner - Suit */}
-          <View style={[styles.topRightCorner, { top: cornerRankSuitVertical, right: cornerRankSuitHorizontal }]}>
+          <View style={[styles.topRightCorner, { top: cornerSuitVertical, right: cornerRankSuitHorizontal }]}>
             <Image 
               source={IMAGES[card.suit]} 
               style={[
@@ -80,7 +81,7 @@ export const CardComponent: React.FC<CardProps> = ({
           {/* Bottom row: suit on left, rank on right (both positioned at opposite corners) */}
           
           {/* Bottom-left corner - Suit (positioned like bottom-left rank would be) */}
-          <View style={[styles.bottomLeftCorner, { bottom: cornerRankSuitVertical, left: cornerRankSuitHorizontal }]}>
+          <View style={[styles.bottomLeftCorner, { bottom: cornerSuitVertical, left: cornerRankSuitHorizontal }]}>
             <Image 
               source={IMAGES[card.suit]} 
               style={[
@@ -96,7 +97,7 @@ export const CardComponent: React.FC<CardProps> = ({
           </View>
           
           {/* Bottom-right corner - Rank (positioned like bottom-right rank would be) */}
-          <View style={[styles.bottomRightCorner, { bottom: cornerRankSuitVertical, right: cornerRankSuitHorizontal }]}>
+          <View style={[styles.bottomRightCorner, { bottom: cornerRankVertical, right: cornerRankSuitHorizontal }]}>
             <Text style={[styles.cornerRank, { 
               color: suitColor, 
               fontSize: cornerRankFontSize,
