@@ -18,7 +18,7 @@ export const CardComponent: React.FC<CardProps> = ({
 }) => {
   const [dimensions, setDimensions] = React.useState({ width: 80, height: 120 });
   const suitColor = card.suit === 'hearts' ? '#FF4444' :
-    card.suit === 'diamonds' ? '#edff4cff' :
+    card.suit === 'diamonds' ? '#ffa500ff' :
       card.suit === 'clubs' ? '#197a29ff' : '#333333';
 
   const cornerRankFontSize = dimensions.width * 0.3;
