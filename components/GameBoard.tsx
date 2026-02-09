@@ -1,10 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
 import { IMAGES, preloadImages } from '../utils/assets';
 import { DifficultyModal } from './DifficultyModal';
 import { Pile, PileRef } from './Pile';
+
+const SPARKLE_COUNT = 8;
+const SUIT_IMAGE_MAP: Record<string, any> = {
+    spades: IMAGES.spades,
+    clubs: IMAGES.clubs,
+    hearts: IMAGES.hearts,
+    diamonds: IMAGES.diamonds,
+};
 
 export const GameBoard: React.FC = () => {
     const [gameState, setGameState] = useState<GameState | null>(null);
@@ -15,6 +23,23 @@ export const GameBoard: React.FC = () => {
     const [currentDifficulty, setCurrentDifficulty] = useState<number>(0); // Default to Easy
     const [expandedPileIndex, setExpandedPileIndex] = useState<number | null>(null);
     const pileRefs = useRef<(PileRef | null)[]>([]);
+
+    // Completion animation state
+    const [animatingSuit, setAnimatingSuit] = useState<string | null>(null);
+    const prevCompletedRef = useRef<Record<number, number>>({});
+    const animationQueueRef = useRef<string[]>([]);
+    const isAnimatingRef = useRef(false);
+
+    // Animated values
+    const centerScale = useRef(new Animated.Value(0)).current;
+    const centerOpacity = useRef(new Animated.Value(0)).current;
+    const moveTranslateX = useRef(new Animated.Value(0)).current;
+    const moveTranslateY = useRef(new Animated.Value(0)).current;
+    const glowOpacity = useRef(new Animated.Value(0)).current;
+    const sparkleRadius = useRef(new Animated.Value(0)).current;
+    const sparkleOpacities = useRef(
+        (() => { const arr: Animated.Value[] = []; for (let i = 0; i < SPARKLE_COUNT; i++) arr.push(new Animated.Value(0)); return arr; })()
+    ).current;
 
     useEffect(() => {
         const initGame = async () => {
@@ -32,6 +57,148 @@ export const GameBoard: React.FC = () => {
         };
         initGame();
     }, []);
+
+    // Start the next animation from the queue
+    const startNextAnimation = () => {
+        if (isAnimatingRef.current || animationQueueRef.current.length === 0) return;
+
+        const suit = animationQueueRef.current[0];
+        isAnimatingRef.current = true;
+        setAnimatingSuit(suit);
+
+        const { width, height } = Dimensions.get('window');
+
+        // Reset all animated values
+        centerScale.setValue(0);
+        centerOpacity.setValue(0);
+        moveTranslateX.setValue(0);
+        moveTranslateY.setValue(0);
+        glowOpacity.setValue(0);
+        sparkleRadius.setValue(0);
+        sparkleOpacities.forEach(function (o: Animated.Value) { o.setValue(0); });
+
+        // Phase 1: Appear with bounce
+        const appearAnim = Animated.parallel([
+            Animated.timing(centerOpacity, {
+                toValue: 1, duration: 300, useNativeDriver: true,
+            }),
+            Animated.spring(centerScale, {
+                toValue: 1, friction: 4, tension: 40, useNativeDriver: true,
+            }),
+            Animated.timing(glowOpacity, {
+                toValue: 1, duration: 400, useNativeDriver: true,
+            }),
+        ]);
+
+        // Phase 2: Sparkle burst + pulse
+        const sparkleAnims = Animated.stagger(60,
+            sparkleOpacities.map(function (opacity: Animated.Value) {
+                return Animated.sequence([
+                    Animated.timing(opacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+                    Animated.timing(opacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+                ]);
+            })
+        );
+
+        const sparkleExpandAnim = Animated.timing(sparkleRadius, {
+            toValue: 1, duration: 800, easing: Easing.out(Easing.cubic), useNativeDriver: true,
+        });
+
+        const pulseAnim = Animated.sequence([
+            Animated.timing(centerScale, { toValue: 1.3, duration: 250, useNativeDriver: true }),
+            Animated.timing(centerScale, { toValue: 1.0, duration: 250, useNativeDriver: true }),
+            Animated.timing(centerScale, { toValue: 1.2, duration: 200, useNativeDriver: true }),
+            Animated.timing(centerScale, { toValue: 1.0, duration: 200, useNativeDriver: true }),
+        ]);
+
+        const glowPulseAnim = Animated.sequence([
+            Animated.timing(glowOpacity, { toValue: 0.6, duration: 250, useNativeDriver: true }),
+            Animated.timing(glowOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+            Animated.timing(glowOpacity, { toValue: 0.5, duration: 200, useNativeDriver: true }),
+            Animated.timing(glowOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        ]);
+
+        // Phase 3: Fly to header (top-right where suit counts are)
+        const targetX = width * 0.3;
+        const targetY = -(height * 0.43);
+
+        const moveAnim = Animated.parallel([
+            Animated.timing(centerScale, {
+                toValue: 0.2, duration: 800, easing: Easing.inOut(Easing.cubic), useNativeDriver: true,
+            }),
+            Animated.timing(moveTranslateX, {
+                toValue: targetX, duration: 800, easing: Easing.inOut(Easing.cubic), useNativeDriver: true,
+            }),
+            Animated.timing(moveTranslateY, {
+                toValue: targetY, duration: 800, easing: Easing.inOut(Easing.cubic), useNativeDriver: true,
+            }),
+            Animated.timing(centerOpacity, {
+                toValue: 0, duration: 800, easing: Easing.in(Easing.quad), useNativeDriver: true,
+            }),
+            Animated.timing(glowOpacity, {
+                toValue: 0, duration: 600, useNativeDriver: true,
+            }),
+        ]);
+
+        // Run the full sequence
+        Animated.sequence([
+            appearAnim,
+            Animated.parallel([
+                sparkleAnims,
+                sparkleExpandAnim,
+                pulseAnim,
+                glowPulseAnim,
+            ]),
+            Animated.delay(100),
+            moveAnim,
+        ]).start(function () {
+            animationQueueRef.current.shift();
+            isAnimatingRef.current = false;
+            setAnimatingSuit(null);
+            startNextAnimation();
+        });
+    };
+
+    // Detect newly completed sequences
+    useEffect(function () {
+        if (!gameState) return;
+
+        var currentCompleted = gameState.completedSequencesBySuit;
+        var prevCompleted = prevCompletedRef.current;
+        var suitMap: Record<number, string> = {
+            1: 'spades', 2: 'clubs', 3: 'hearts', 4: 'diamonds'
+        };
+
+        var newlyCompleted: string[] = [];
+        var anyDecreased = false;
+
+        [1, 2, 3, 4].forEach(function (suitNum) {
+            var curr = currentCompleted[suitNum] || 0;
+            var prev = prevCompleted[suitNum] || 0;
+            if (curr < prev) anyDecreased = true;
+            if (curr > prev) {
+                var suitName = suitMap[suitNum];
+                if (suitName) {
+                    for (var i = 0; i < curr - prev; i++) {
+                        newlyCompleted.push(suitName);
+                    }
+                }
+            }
+        });
+
+        prevCompletedRef.current = {};
+        [1, 2, 3, 4].forEach(function (k) {
+            prevCompletedRef.current[k] = currentCompleted[k] || 0;
+        });
+
+        // Don't animate on decrease (new game / undo)
+        if (anyDecreased || newlyCompleted.length === 0) return;
+
+        newlyCompleted.forEach(function (s) {
+            animationQueueRef.current.push(s);
+        });
+        startNextAnimation();
+    }, [gameState]);
 
     const handleDealCards = async () => {
         if (!gameState) return;
@@ -328,6 +495,72 @@ export const GameBoard: React.FC = () => {
                     </TouchableOpacity>
                 </View>
 
+                {/* Completion celebration animation */}
+                {animatingSuit && (
+                    <View style={styles.animationOverlay} pointerEvents="none">
+                        <Animated.View
+                            style={[
+                                styles.animationContainer,
+                                {
+                                    opacity: centerOpacity,
+                                    transform: [
+                                        { translateX: moveTranslateX },
+                                        { translateY: moveTranslateY },
+                                        { scale: centerScale },
+                                    ],
+                                },
+                            ]}
+                        >
+                            {/* Glow circle */}
+                            <Animated.View
+                                style={[
+                                    styles.glowCircle,
+                                    { opacity: glowOpacity },
+                                ]}
+                            />
+
+                            {/* Suit image */}
+                            <Image
+                                source={SUIT_IMAGE_MAP[animatingSuit]}
+                                style={styles.animatedSuitImage}
+                            />
+
+                            {/* Sparkle particles */}
+                            {sparkleOpacities.map(function (opacity: Animated.Value, i: number) {
+                                var angle = (i * 2 * Math.PI) / SPARKLE_COUNT;
+                                var endX = Math.cos(angle) * 70;
+                                var endY = Math.sin(angle) * 70;
+
+                                return (
+                                    <Animated.View
+                                        key={i}
+                                        style={[
+                                            styles.sparkle,
+                                            {
+                                                opacity: opacity,
+                                                transform: [
+                                                    {
+                                                        translateX: sparkleRadius.interpolate({
+                                                            inputRange: [0, 1],
+                                                            outputRange: [0, endX],
+                                                        }),
+                                                    },
+                                                    {
+                                                        translateY: sparkleRadius.interpolate({
+                                                            inputRange: [0, 1],
+                                                            outputRange: [0, endY],
+                                                        }),
+                                                    },
+                                                ],
+                                            },
+                                        ]}
+                                    />
+                                );
+                            })}
+                        </Animated.View>
+                    </View>
+                )}
+
                 <DifficultyModal
                     visible={showDifficultyModal}
                     onClose={() => setShowDifficultyModal(false)}
@@ -482,5 +715,49 @@ const styles = StyleSheet.create({
         height: '50%',
         opacity: 0.9,
         aspectRatio: 10
+    },
+    animationOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10000,
+        elevation: 200,
+    },
+    animationContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 140,
+        height: 140,
+    },
+    animatedSuitImage: {
+        width: 80,
+        height: 80,
+        tintColor: 'white',
+    },
+    glowCircle: {
+        position: 'absolute',
+        width: 140,
+        height: 140,
+        borderRadius: 70,
+        backgroundColor: 'rgba(255, 215, 0, 0.25)',
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 30,
+    },
+    sparkle: {
+        position: 'absolute',
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#FFD700',
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 6,
     },
 });
