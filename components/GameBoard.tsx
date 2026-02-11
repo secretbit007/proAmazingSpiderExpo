@@ -21,6 +21,7 @@ const SUIT_COLOR_MAP: Record<string, string> = {
 };
 const MAX_COMPLETED = 8;
 const ICON_SPARKLE_COUNT = 6;
+const CONGRATS_SPARKLE_COUNT = 20;
 
 export const GameBoard: React.FC = () => {
     const [gameState, setGameState] = useState<GameState | null>(null);
@@ -71,6 +72,30 @@ export const GameBoard: React.FC = () => {
     ).current;
     const iconSparkleRadii = useRef(
         (() => { const arr: Animated.Value[] = []; for (let i = 0; i < MAX_COMPLETED; i++) arr.push(new Animated.Value(0)); return arr; })()
+    ).current;
+
+    // Congratulations screen state
+    const [showCongrats, setShowCongrats] = useState(false);
+    const showCongratsRef = useRef(false);
+    const congratsOpacity = useRef(new Animated.Value(0)).current;
+    const congratsTextScale = useRef(new Animated.Value(0)).current;
+    const congratsMovesOpacity = useRef(new Animated.Value(0)).current;
+    const congratsButtonOpacity = useRef(new Animated.Value(0)).current;
+    const congratsSuitScales = useRef(
+        (() => { const arr: Animated.Value[] = []; for (let i = 0; i < 4; i++) arr.push(new Animated.Value(0)); return arr; })()
+    ).current;
+    const congratsSparkleAnims = useRef(
+        (() => {
+            const arr: { opacity: Animated.Value; translateX: Animated.Value; translateY: Animated.Value }[] = [];
+            for (let i = 0; i < CONGRATS_SPARKLE_COUNT; i++) {
+                arr.push({
+                    opacity: new Animated.Value(0),
+                    translateX: new Animated.Value(0),
+                    translateY: new Animated.Value(0),
+                });
+            }
+            return arr;
+        })()
     ).current;
 
     useEffect(() => {
@@ -194,6 +219,12 @@ export const GameBoard: React.FC = () => {
                 var newIcons = prev.concat([completedSuit]);
                 var idx = newIcons.length - 1;
                 animateIconEntrance(idx, completedSuit);
+
+                // Show congratulations when all 8 suits are completed
+                if (newIcons.length === MAX_COMPLETED) {
+                    setTimeout(function () { showCongratsScreen(); }, 1200);
+                }
+
                 return newIcons;
             });
 
@@ -236,6 +267,87 @@ export const GameBoard: React.FC = () => {
                 toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true,
             }),
         ]).start();
+    };
+
+    // Show the congratulations screen with sequenced animations
+    const showCongratsScreen = () => {
+        showCongratsRef.current = true;
+        setShowCongrats(true);
+
+        // Reset all congrats animated values
+        congratsOpacity.setValue(0);
+        congratsTextScale.setValue(0);
+        congratsMovesOpacity.setValue(0);
+        congratsButtonOpacity.setValue(0);
+        congratsSuitScales.forEach(function (s: Animated.Value) { s.setValue(0); });
+
+        // Run the entrance sequence
+        Animated.sequence([
+            // Dark overlay fades in
+            Animated.timing(congratsOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
+            // "Congratulations!" bounces in
+            Animated.spring(congratsTextScale, { toValue: 1, friction: 4, tension: 40, useNativeDriver: true }),
+            // Moves text fades in
+            Animated.timing(congratsMovesOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+            // 4 suit icons bounce in one by one
+            Animated.stagger(200,
+                congratsSuitScales.map(function (s: Animated.Value) {
+                    return Animated.spring(s, { toValue: 1, friction: 4, tension: 40, useNativeDriver: true });
+                })
+            ),
+            // New Game button fades in
+            Animated.timing(congratsButtonOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+        ]).start();
+
+        // Start continuous floating sparkles
+        startCongratsSparkles();
+    };
+
+    // Continuous floating sparkle particles for congrats screen
+    const startCongratsSparkles = () => {
+        const { width } = Dimensions.get('window');
+
+        congratsSparkleAnims.forEach(function (sparkle, i) {
+            var baseDelay = i * 120;
+
+            var animateOne = function () {
+                if (!showCongratsRef.current) return;
+
+                var startX = (Math.random() - 0.5) * width * 0.9;
+                var startY = 120 + Math.random() * 80;
+                var endY = -(120 + Math.random() * 80);
+                var driftX = (Math.random() - 0.5) * 60;
+
+                sparkle.opacity.setValue(0);
+                sparkle.translateX.setValue(startX);
+                sparkle.translateY.setValue(startY);
+
+                Animated.parallel([
+                    Animated.sequence([
+                        Animated.timing(sparkle.opacity, { toValue: 0.9, duration: 200, useNativeDriver: true }),
+                        Animated.delay(800),
+                        Animated.timing(sparkle.opacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+                    ]),
+                    Animated.timing(sparkle.translateY, {
+                        toValue: endY, duration: 1500, easing: Easing.out(Easing.quad), useNativeDriver: true,
+                    }),
+                    Animated.timing(sparkle.translateX, {
+                        toValue: startX + driftX, duration: 1500, useNativeDriver: true,
+                    }),
+                ]).start(function () { animateOne(); });
+            };
+
+            setTimeout(animateOne, baseDelay);
+        });
+    };
+
+    // Dismiss congrats and start a new game
+    const dismissCongratsAndNewGame = () => {
+        showCongratsRef.current = false;
+        Animated.timing(congratsOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(function () {
+            setShowCongrats(false);
+            handleNewGame();
+        });
     };
 
     // Detect newly completed sequences
@@ -283,6 +395,11 @@ export const GameBoard: React.FC = () => {
             setCompletedIcons(icons);
             icons.forEach(function (_: string, idx: number) { iconScales[idx].setValue(1); iconGlows[idx].setValue(0); });
             for (var k = icons.length; k < MAX_COMPLETED; k++) { iconScales[k].setValue(0); iconGlows[k].setValue(0); }
+            // Dismiss congrats if showing
+            if (showCongratsRef.current) {
+                showCongratsRef.current = false;
+                setShowCongrats(false);
+            }
             return;
         }
 
@@ -676,6 +793,70 @@ export const GameBoard: React.FC = () => {
                     onDifficultySelect={handleDifficultySelect}
                     currentDifficulty={currentDifficulty}
                 />
+
+                {/* Congratulations overlay */}
+                {showCongrats && (
+                    <Animated.View style={[styles.congratsOverlay, { opacity: congratsOpacity }]}>
+                        {/* Floating sparkle particles */}
+                        {congratsSparkleAnims.map(function (sparkle, i) {
+                            return (
+                                <Animated.View
+                                    key={i}
+                                    style={[
+                                        styles.congratsSparkle,
+                                        {
+                                            opacity: sparkle.opacity,
+                                            transform: [
+                                                { translateX: sparkle.translateX },
+                                                { translateY: sparkle.translateY },
+                                            ],
+                                        },
+                                    ]}
+                                />
+                            );
+                        })}
+
+                        {/* Congratulations text */}
+                        <Animated.Text style={[
+                            styles.congratsTitle,
+                            { transform: [{ scale: congratsTextScale }] },
+                        ]}>
+                            Congratulations!
+                        </Animated.Text>
+
+                        {/* Moves count */}
+                        <Animated.Text style={[
+                            styles.congratsMoves,
+                            { opacity: congratsMovesOpacity },
+                        ]}>
+                            Completed in {gameState.moves} moves
+                        </Animated.Text>
+
+                        {/* Suit icons row */}
+                        <View style={styles.congratsSuitsRow}>
+                            {['spades', 'clubs', 'hearts', 'diamonds'].map(function (suit, i) {
+                                return (
+                                    <Animated.View key={suit} style={[
+                                        styles.congratsSuitWrapper,
+                                        { transform: [{ scale: congratsSuitScales[i] }] },
+                                    ]}>
+                                        <Image
+                                            source={SUIT_IMAGE_MAP[suit]}
+                                            style={[styles.congratsSuitImage, { tintColor: SUIT_COLOR_MAP[suit] }]}
+                                        />
+                                    </Animated.View>
+                                );
+                            })}
+                        </View>
+
+                        {/* New Game button */}
+                        <Animated.View style={{ opacity: congratsButtonOpacity }}>
+                            <TouchableOpacity style={styles.congratsButton} onPress={dismissCongratsAndNewGame}>
+                                <Text style={styles.congratsButtonText}>New Game</Text>
+                            </TouchableOpacity>
+                        </Animated.View>
+                    </Animated.View>
+                )}
             </ImageBackground>
         </TouchableWithoutFeedback>
     );
@@ -866,5 +1047,72 @@ const styles = StyleSheet.create({
         width: 5,
         height: 5,
         borderRadius: 2.5,
+    },
+    congratsOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        zIndex: 20000,
+        elevation: 300,
+    },
+    congratsTitle: {
+        color: '#FFD700',
+        fontSize: 36,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        textShadowColor: 'rgba(255, 215, 0, 0.5)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 20,
+        marginBottom: 12,
+    },
+    congratsMoves: {
+        color: 'white',
+        fontSize: 18,
+        textAlign: 'center',
+        marginBottom: 30,
+    },
+    congratsSuitsRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 40,
+    },
+    congratsSuitWrapper: {
+        width: 60,
+        height: 60,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginHorizontal: 10,
+    },
+    congratsSuitImage: {
+        width: 48,
+        height: 48,
+    },
+    congratsButton: {
+        backgroundColor: '#FFD700',
+        paddingHorizontal: 40,
+        paddingVertical: 14,
+        borderRadius: 8,
+    },
+    congratsButtonText: {
+        color: '#000',
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+    congratsSparkle: {
+        position: 'absolute',
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#FFD700',
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 4,
     },
 });
