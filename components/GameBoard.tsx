@@ -13,6 +13,14 @@ const SUIT_IMAGE_MAP: Record<string, any> = {
     hearts: IMAGES.hearts,
     diamonds: IMAGES.diamonds,
 };
+const SUIT_COLOR_MAP: Record<string, string> = {
+    hearts: '#FF4444',
+    diamonds: '#ffa500',
+    clubs: '#197a29',
+    spades: '#333333',
+};
+const MAX_COMPLETED = 8;
+const ICON_SPARKLE_COUNT = 6;
 
 export const GameBoard: React.FC = () => {
     const [gameState, setGameState] = useState<GameState | null>(null);
@@ -39,6 +47,30 @@ export const GameBoard: React.FC = () => {
     const sparkleRadius = useRef(new Animated.Value(0)).current;
     const sparkleOpacities = useRef(
         (() => { const arr: Animated.Value[] = []; for (let i = 0; i < SPARKLE_COUNT; i++) arr.push(new Animated.Value(0)); return arr; })()
+    ).current;
+
+    // Completed suit icons displayed above bottom bar
+    const [completedIcons, setCompletedIcons] = useState<string[]>([]);
+    const iconScales = useRef(
+        (() => { const arr: Animated.Value[] = []; for (let i = 0; i < MAX_COMPLETED; i++) arr.push(new Animated.Value(0)); return arr; })()
+    ).current;
+    const iconGlows = useRef(
+        (() => { const arr: Animated.Value[] = []; for (let i = 0; i < MAX_COMPLETED; i++) arr.push(new Animated.Value(0)); return arr; })()
+    ).current;
+    // Per-icon sparkle particles (ICON_SPARKLE_COUNT per icon slot)
+    const iconSparkleOpacities = useRef(
+        (() => {
+            const outer: Animated.Value[][] = [];
+            for (let i = 0; i < MAX_COMPLETED; i++) {
+                const inner: Animated.Value[] = [];
+                for (let j = 0; j < ICON_SPARKLE_COUNT; j++) inner.push(new Animated.Value(0));
+                outer.push(inner);
+            }
+            return outer;
+        })()
+    ).current;
+    const iconSparkleRadii = useRef(
+        (() => { const arr: Animated.Value[] = []; for (let i = 0; i < MAX_COMPLETED; i++) arr.push(new Animated.Value(0)); return arr; })()
     ).current;
 
     useEffect(() => {
@@ -118,13 +150,13 @@ export const GameBoard: React.FC = () => {
             Animated.timing(glowOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
         ]);
 
-        // Phase 3: Fly to header (top-right where suit counts are)
-        const targetX = width * 0.3;
-        const targetY = -(height * 0.43);
+        // Phase 3: Fly to completed icons area (bottom-center, above button bar)
+        const targetX = 0;
+        const targetY = height * 0.38;
 
         const moveAnim = Animated.parallel([
             Animated.timing(centerScale, {
-                toValue: 0.2, duration: 800, easing: Easing.inOut(Easing.cubic), useNativeDriver: true,
+                toValue: 0.3, duration: 800, easing: Easing.inOut(Easing.cubic), useNativeDriver: true,
             }),
             Animated.timing(moveTranslateX, {
                 toValue: targetX, duration: 800, easing: Easing.inOut(Easing.cubic), useNativeDriver: true,
@@ -152,11 +184,58 @@ export const GameBoard: React.FC = () => {
             Animated.delay(100),
             moveAnim,
         ]).start(function () {
+            var completedSuit = animationQueueRef.current[0];
             animationQueueRef.current.shift();
             isAnimatingRef.current = false;
             setAnimatingSuit(null);
+
+            // Add icon to completed row and animate entrance
+            setCompletedIcons(function (prev) {
+                var newIcons = prev.concat([completedSuit]);
+                var idx = newIcons.length - 1;
+                animateIconEntrance(idx, completedSuit);
+                return newIcons;
+            });
+
             startNextAnimation();
         });
+    };
+
+    // Animate a single icon entrance in the completed icons row
+    const animateIconEntrance = (index: number, _suit: string) => {
+        iconScales[index].setValue(0);
+        iconGlows[index].setValue(0);
+        iconSparkleRadii[index].setValue(0);
+        iconSparkleOpacities[index].forEach(function (o: Animated.Value) { o.setValue(0); });
+
+        Animated.parallel([
+            // Scale bounce in
+            Animated.sequence([
+                Animated.spring(iconScales[index], {
+                    toValue: 1.5, friction: 3, tension: 40, useNativeDriver: true,
+                }),
+                Animated.spring(iconScales[index], {
+                    toValue: 1.0, friction: 5, useNativeDriver: true,
+                }),
+            ]),
+            // Glow pulse
+            Animated.sequence([
+                Animated.timing(iconGlows[index], { toValue: 1, duration: 300, useNativeDriver: true }),
+                Animated.timing(iconGlows[index], { toValue: 0, duration: 600, useNativeDriver: true }),
+            ]),
+            // Sparkle burst
+            Animated.stagger(50,
+                iconSparkleOpacities[index].map(function (opacity: Animated.Value) {
+                    return Animated.sequence([
+                        Animated.timing(opacity, { toValue: 1, duration: 100, useNativeDriver: true }),
+                        Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+                    ]);
+                })
+            ),
+            Animated.timing(iconSparkleRadii[index], {
+                toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true,
+            }),
+        ]).start();
     };
 
     // Detect newly completed sequences
@@ -191,8 +270,23 @@ export const GameBoard: React.FC = () => {
             prevCompletedRef.current[k] = currentCompleted[k] || 0;
         });
 
-        // Don't animate on decrease (new game / undo)
-        if (anyDecreased || newlyCompleted.length === 0) return;
+        // On decrease (new game / undo), rebuild icons instantly without animation
+        if (anyDecreased) {
+            var icons: string[] = [];
+            [1, 2, 3, 4].forEach(function (suitNum) {
+                var count = currentCompleted[suitNum] || 0;
+                var suitName = suitMap[suitNum];
+                if (suitName) {
+                    for (var j = 0; j < count; j++) icons.push(suitName);
+                }
+            });
+            setCompletedIcons(icons);
+            icons.forEach(function (_: string, idx: number) { iconScales[idx].setValue(1); iconGlows[idx].setValue(0); });
+            for (var k = icons.length; k < MAX_COMPLETED; k++) { iconScales[k].setValue(0); iconGlows[k].setValue(0); }
+            return;
+        }
+
+        if (newlyCompleted.length === 0) return;
 
         newlyCompleted.forEach(function (s) {
             animationQueueRef.current.push(s);
@@ -349,32 +443,6 @@ export const GameBoard: React.FC = () => {
         }
     };
 
-    // Function to get completed sequences by suit from backend data
-    const getCompletedSequencesBySuit = (gameState: GameState) => {
-        const suitMap: Record<number, string> = {
-            1: 'spades',
-            2: 'clubs', 
-            3: 'hearts',
-            4: 'diamonds',
-        };
-
-        const suitCounts = {
-            hearts: 0,
-            diamonds: 0,
-            clubs: 0,
-            spades: 0
-        };
-
-        // Convert backend suit numbers to frontend suit names
-        Object.entries(gameState.completedSequencesBySuit).forEach(([suitNumber, count]) => {
-            const suitName = suitMap[parseInt(suitNumber)] as keyof typeof suitCounts;
-            if (suitName) {
-                suitCounts[suitName] = count;
-            }
-        });
-
-        return suitCounts;
-    };
 
     if (loading) {
         return (
@@ -433,28 +501,7 @@ export const GameBoard: React.FC = () => {
                 </View>
                 
                 <View style={styles.header}>
-                    <View style={styles.headerLeft}>
-                        <Text style={styles.headerText}>Moves: {gameState.moves}  |  Difficulty: {currentDifficulty}  |  Stack: {gameState.drawsRemaining}/5  |  Completed: {gameState.completedSequences}/8</Text>
-                    </View>
-                    
-                    <View style={styles.headerRight}>
-                        {(() => {
-                            const completedSequences = getCompletedSequencesBySuit(gameState);
-                            const suits = [
-                                { suit: 'hearts', image: IMAGES.hearts },
-                                { suit: 'diamonds', image: IMAGES.diamonds },
-                                { suit: 'clubs', image: IMAGES.clubs },
-                                { suit: 'spades', image: IMAGES.spades }
-                            ];
-                            
-                            return suits.map(({ suit, image }) => (
-                                <View key={suit} style={styles.suitContainer}>
-                                    <Image source={image} style={styles.suitImage} />
-                                    <Text style={styles.suitText}>{completedSequences[suit as keyof typeof completedSequences]}/2</Text>
-                                </View>
-                            ));
-                        })()}
-                    </View>
+                    <Text style={styles.headerText}>Moves: {gameState.moves}  |  Stack: {gameState.drawsRemaining}/5  |  Completed: {gameState.completedSequences}/8</Text>
                 </View>
 
                 <View style={styles.container}>
@@ -476,6 +523,68 @@ export const GameBoard: React.FC = () => {
                         ))}
                     </View>
                 </View>
+
+                {/* Completed suit icons above button bar */}
+                {completedIcons.length > 0 && (
+                    <View style={styles.completedIconsRow}>
+                        {completedIcons.map(function (suit: string, index: number) {
+                            return (
+                                <Animated.View key={index} style={[
+                                    styles.completedIconWrapper,
+                                    { transform: [{ scale: iconScales[index] }] },
+                                ]}>
+                                    {/* Icon glow */}
+                                    <Animated.View style={[
+                                        styles.iconGlow,
+                                        {
+                                            opacity: iconGlows[index],
+                                            backgroundColor: SUIT_COLOR_MAP[suit] || '#FFD700',
+                                        },
+                                    ]} />
+
+                                    {/* Suit image with matching color */}
+                                    <Image
+                                        source={SUIT_IMAGE_MAP[suit]}
+                                        style={[styles.completedIconImage, { tintColor: SUIT_COLOR_MAP[suit] }]}
+                                    />
+
+                                    {/* Per-icon sparkles */}
+                                    {iconSparkleOpacities[index].map(function (opacity: Animated.Value, j: number) {
+                                        var angle = (j * 2 * Math.PI) / ICON_SPARKLE_COUNT;
+                                        var endX = Math.cos(angle) * 22;
+                                        var endY = Math.sin(angle) * 22;
+                                        return (
+                                            <Animated.View
+                                                key={j}
+                                                style={[
+                                                    styles.iconSparkle,
+                                                    {
+                                                        opacity: opacity,
+                                                        backgroundColor: SUIT_COLOR_MAP[suit] || '#FFD700',
+                                                        transform: [
+                                                            {
+                                                                translateX: iconSparkleRadii[index].interpolate({
+                                                                    inputRange: [0, 1],
+                                                                    outputRange: [0, endX],
+                                                                }),
+                                                            },
+                                                            {
+                                                                translateY: iconSparkleRadii[index].interpolate({
+                                                                    inputRange: [0, 1],
+                                                                    outputRange: [0, endY],
+                                                                }),
+                                                            },
+                                                        ],
+                                                    },
+                                                ]}
+                                            />
+                                        );
+                                    })}
+                                </Animated.View>
+                            );
+                        })}
+                    </View>
+                )}
 
                 <View style={styles.buttonBar}>
                     <TouchableOpacity style={styles.button} onPress={handleNewGame}>
@@ -522,7 +631,7 @@ export const GameBoard: React.FC = () => {
                             {/* Suit image */}
                             <Image
                                 source={SUIT_IMAGE_MAP[animatingSuit]}
-                                style={styles.animatedSuitImage}
+                                style={[styles.animatedSuitImage, { tintColor: SUIT_COLOR_MAP[animatingSuit] || 'white' }]}
                             />
 
                             {/* Sparkle particles */}
@@ -587,49 +696,18 @@ const styles = StyleSheet.create({
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 5,
-        paddingVertical: 5,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 3000,
-        elevation: 10, // For Android
-    },
-    headerLeft: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        paddingRight: 10
-    },
-    headerRight: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        paddingLeft: 10
+        elevation: 10,
     },
     headerText: {
         color: 'white',
         fontSize: 12,
-        marginVertical: 1,
-    },
-    suitImage: {
-        width: 15,
-        height: 15,
-        marginHorizontal: 4,
-        tintColor: 'white',
-    },
-    suitContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginHorizontal: 2,
-    },
-    suitText: {
-        color: 'white',
-        fontSize: 10,
-        marginLeft: 2,
-        fontWeight: 'bold',
+        textAlign: 'center',
     },
     bottomSection: {
         flexDirection: 'row',
@@ -736,7 +814,6 @@ const styles = StyleSheet.create({
     animatedSuitImage: {
         width: 80,
         height: 80,
-        tintColor: 'white',
     },
     glowCircle: {
         position: 'absolute',
@@ -759,5 +836,35 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 1,
         shadowRadius: 6,
+    },
+    completedIconsRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 6,
+        backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    },
+    completedIconWrapper: {
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginHorizontal: 5,
+    },
+    completedIconImage: {
+        width: 24,
+        height: 24,
+    },
+    iconGlow: {
+        position: 'absolute',
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+    },
+    iconSparkle: {
+        position: 'absolute',
+        width: 5,
+        height: 5,
+        borderRadius: 2.5,
     },
 });
