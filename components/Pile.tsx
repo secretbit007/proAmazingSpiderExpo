@@ -1,6 +1,7 @@
 import React from 'react';
 import { LayoutChangeEvent, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
 import { Card } from '../types/gameTypes';
+import { COLORS } from '../constants/Colors';
 import { CardComponent } from './Card';
 
 interface PileProps {
@@ -475,14 +476,14 @@ const styles = StyleSheet.create({
     left: 0,
   },
   hoveredCard: {
-    borderColor: '#4a90e2',
+    borderColor: COLORS.selectionBlue,
     borderWidth: 2,
-    borderRadius: 5,
+    borderRadius: 6,
   },
   nonInteractiveCard: {
-    opacity: 0.9,
+    opacity: 0.88,
   },
   unexpandedCard: {
-    opacity: 0.4,
+    opacity: 0.35,
   },
 });

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
+import { COLORS } from '../constants/Colors';
 import { IMAGES, preloadImages } from '../utils/assets';
 import { DifficultyModal } from './DifficultyModal';
 import { Pile, PileRef } from './Pile';
@@ -14,10 +15,10 @@ const SUIT_IMAGE_MAP: Record<string, any> = {
     diamonds: IMAGES.diamonds,
 };
 const SUIT_COLOR_MAP: Record<string, string> = {
-    hearts: '#FF4444',
-    diamonds: '#ffa500',
-    clubs: '#197a29',
-    spades: '#333333',
+    hearts: COLORS.hearts,
+    diamonds: COLORS.diamonds,
+    clubs: COLORS.clubs,
+    spades: COLORS.spades,
 };
 const MAX_COMPLETED = 8;
 const ICON_SPARKLE_COUNT = 6;
@@ -563,8 +564,8 @@ export const GameBoard: React.FC = () => {
 
     if (loading) {
         return (
-            <View style={[styles.container, styles.center]}>
-                <ActivityIndicator size="large" color="#4a90e2" />
+            <View style={[styles.container, styles.center, styles.loadingScreen]}>
+                <ActivityIndicator size="large" color={COLORS.selectionBlue} />
                 <Text style={styles.loadingText}>Loading game...</Text>
             </View>
         );
@@ -618,7 +619,20 @@ export const GameBoard: React.FC = () => {
                 </View>
                 
                 <View style={styles.header}>
-                    <Text style={styles.headerText}>Moves: {gameState.moves}  |  Stack: {gameState.drawsRemaining}/5  |  Completed: {gameState.completedSequences}/8</Text>
+                    <View style={styles.statChip}>
+                        <Text style={styles.statLabel}>MOVES</Text>
+                        <Text style={styles.statValue}>{gameState.moves}</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statChip}>
+                        <Text style={styles.statLabel}>STACK</Text>
+                        <Text style={styles.statValue}>{gameState.drawsRemaining}<Text style={styles.statTotal}>/5</Text></Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statChip}>
+                        <Text style={styles.statLabel}>DONE</Text>
+                        <Text style={styles.statValue}>{gameState.completedSequences}<Text style={styles.statTotal}>/8</Text></Text>
+                    </View>
                 </View>
 
                 <View style={styles.container}>
@@ -704,19 +718,24 @@ export const GameBoard: React.FC = () => {
                 )}
 
                 <View style={styles.buttonBar}>
-                    <TouchableOpacity style={styles.button} onPress={handleNewGame}>
+                    <TouchableOpacity style={[styles.button, styles.buttonNew]} onPress={handleNewGame} activeOpacity={0.7}>
+                        <Text style={styles.buttonEmoji}>+</Text>
                         <Text style={styles.buttonText}>New</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={handleDealCards}>
-                        <Text style={styles.buttonText}>Stack</Text>
+                    <TouchableOpacity style={[styles.button, styles.buttonStack]} onPress={handleDealCards} activeOpacity={0.7}>
+                        <Text style={styles.buttonEmoji}>&#x25A6;</Text>
+                        <Text style={styles.buttonText}>Deal</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={handleSolve}>
+                    <TouchableOpacity style={[styles.button, styles.buttonSolve]} onPress={handleSolve} activeOpacity={0.7}>
+                        <Text style={styles.buttonEmoji}>&#x2728;</Text>
                         <Text style={styles.buttonText}>Solve</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={handleUndo}>
+                    <TouchableOpacity style={[styles.button, styles.buttonUndo]} onPress={handleUndo} activeOpacity={0.7}>
+                        <Text style={styles.buttonEmoji}>&#x21B6;</Text>
                         <Text style={styles.buttonText}>Undo</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={handleDifficulty}>
+                    <TouchableOpacity style={[styles.button, styles.buttonDiff]} onPress={handleDifficulty} activeOpacity={0.7}>
+                        <Text style={styles.buttonEmoji}>&#x2699;</Text>
                         <Text style={styles.buttonText}>Diff</Text>
                     </TouchableOpacity>
                 </View>
@@ -875,37 +894,52 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    loadingScreen: {
+        backgroundColor: COLORS.background,
+    },
+
+    // ── Header ──────────────────────────────────────
     header: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: COLORS.glass,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.glassBorder,
         zIndex: 3000,
         elevation: 10,
+        gap: 0,
     },
-    headerText: {
-        color: 'white',
-        fontSize: 12,
-        textAlign: 'center',
-    },
-    bottomSection: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    statChip: {
         alignItems: 'center',
-        marginTop: 'auto',
-        paddingBottom: 20,
+        paddingHorizontal: 14,
     },
-    stockContainer: {
-        flexDirection: 'column',
-        justifyContent: 'flex-end',
-        flex: 1,
+    statLabel: {
+        color: COLORS.textMuted,
+        fontSize: 9,
+        fontWeight: '700',
+        letterSpacing: 1.2,
+        marginBottom: 1,
     },
-    completedContainer: {
-        flex: 1,
-        flexDirection: 'column'
+    statValue: {
+        color: COLORS.textPrimary,
+        fontSize: 16,
+        fontWeight: '800',
     },
+    statTotal: {
+        color: COLORS.textMuted,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    statDivider: {
+        width: 1,
+        height: 24,
+        backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    },
+
+    // ── Piles ───────────────────────────────────────
     pilesContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -913,55 +947,84 @@ const styles = StyleSheet.create({
         marginHorizontal: 5,
         marginTop: 5,
     },
+
+    // ── Loading / Error ─────────────────────────────
     loadingText: {
-        color: 'white',
-        marginTop: 10,
-        fontSize: 16,
+        color: COLORS.textSecondary,
+        marginTop: 12,
+        fontSize: 15,
+        fontWeight: '500',
     },
     errorText: {
-        color: 'white',
+        color: COLORS.textPrimary,
         fontSize: 18,
         marginBottom: 20,
         textAlign: 'center',
     },
     retryButton: {
-        backgroundColor: '#4a90e2',
-        padding: 12,
-        borderRadius: 5,
+        backgroundColor: COLORS.buttonPrimary,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 20,
     },
     retryButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
+        color: COLORS.buttonText,
+        fontWeight: '700',
+        fontSize: 15,
     },
-    gameControls: {
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 'auto',
-        paddingBottom: 10,
-    },
+
+    // ── Button Bar ──────────────────────────────────
     buttonBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingHorizontal: 5,
-        paddingVertical: 10,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        alignItems: 'center',
+        paddingHorizontal: 6,
+        paddingVertical: 8,
+        backgroundColor: COLORS.glass,
+        borderTopWidth: 1,
+        borderTopColor: COLORS.glassBorder,
         zIndex: 3000,
-        elevation: 10, // For Android
+        elevation: 10,
+        gap: 5,
     },
     button: {
-        backgroundColor: '#4a90e2',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
         flex: 1,
-        marginHorizontal: 5,
+        flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 4,
+        borderRadius: 10,
+        minHeight: 44,
+    },
+    buttonNew: {
+        backgroundColor: COLORS.buttonSuccess,
+    },
+    buttonStack: {
+        backgroundColor: COLORS.buttonPrimary,
+    },
+    buttonSolve: {
+        backgroundColor: '#8B5CF6',
+    },
+    buttonUndo: {
+        backgroundColor: COLORS.buttonMuted,
+    },
+    buttonDiff: {
+        backgroundColor: '#D97706',
+    },
+    buttonEmoji: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.9)',
+        marginBottom: 1,
     },
     buttonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 14,
+        color: COLORS.buttonText,
+        fontWeight: '700',
+        fontSize: 11,
+        letterSpacing: 0.3,
     },
+
+    // ── Logo ────────────────────────────────────────
     logoContainer: {
         position: 'absolute',
         top: '50%',
@@ -972,9 +1035,11 @@ const styles = StyleSheet.create({
     },
     logoImage: {
         height: '50%',
-        opacity: 0.9,
-        aspectRatio: 10
+        opacity: 0.7,
+        aspectRatio: 10,
     },
+
+    // ── Completion Animation ────────────────────────
     animationOverlay: {
         position: 'absolute',
         top: 0,
@@ -1002,7 +1067,7 @@ const styles = StyleSheet.create({
         height: 140,
         borderRadius: 70,
         backgroundColor: 'rgba(255, 215, 0, 0.25)',
-        shadowColor: '#FFD700',
+        shadowColor: COLORS.gold,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.8,
         shadowRadius: 30,
@@ -1012,18 +1077,22 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: '#FFD700',
-        shadowColor: '#FFD700',
+        backgroundColor: COLORS.gold,
+        shadowColor: COLORS.gold,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 1,
         shadowRadius: 6,
     },
+
+    // ── Completed Icons Row ─────────────────────────
     completedIconsRow: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         paddingVertical: 6,
-        backgroundColor: 'rgba(0, 0, 0, 0.35)',
+        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        borderTopWidth: 1,
+        borderTopColor: COLORS.glassBorder,
     },
     completedIconWrapper: {
         width: 32,
@@ -1048,6 +1117,8 @@ const styles = StyleSheet.create({
         height: 5,
         borderRadius: 2.5,
     },
+
+    // ── Congratulations ─────────────────────────────
     congratsOverlay: {
         position: 'absolute',
         top: 0,
@@ -1056,25 +1127,26 @@ const styles = StyleSheet.create({
         bottom: 0,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        backgroundColor: 'rgba(0, 0, 0, 0.88)',
         zIndex: 20000,
         elevation: 300,
     },
     congratsTitle: {
-        color: '#FFD700',
+        color: COLORS.gold,
         fontSize: 36,
         fontWeight: 'bold',
         textAlign: 'center',
-        textShadowColor: 'rgba(255, 215, 0, 0.5)',
+        textShadowColor: COLORS.goldGlow,
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: 20,
         marginBottom: 12,
     },
     congratsMoves: {
-        color: 'white',
+        color: COLORS.textSecondary,
         fontSize: 18,
         textAlign: 'center',
         marginBottom: 30,
+        fontWeight: '500',
     },
     congratsSuitsRow: {
         flexDirection: 'row',
@@ -1094,23 +1166,29 @@ const styles = StyleSheet.create({
         height: 48,
     },
     congratsButton: {
-        backgroundColor: '#FFD700',
+        backgroundColor: COLORS.gold,
         paddingHorizontal: 40,
         paddingVertical: 14,
-        borderRadius: 8,
+        borderRadius: 24,
+        shadowColor: COLORS.gold,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 8,
     },
     congratsButtonText: {
-        color: '#000',
-        fontWeight: 'bold',
+        color: '#1a1a1a',
+        fontWeight: '800',
         fontSize: 18,
+        letterSpacing: 0.5,
     },
     congratsSparkle: {
         position: 'absolute',
         width: 6,
         height: 6,
         borderRadius: 3,
-        backgroundColor: '#FFD700',
-        shadowColor: '#FFD700',
+        backgroundColor: COLORS.gold,
+        shadowColor: COLORS.gold,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 1,
         shadowRadius: 4,

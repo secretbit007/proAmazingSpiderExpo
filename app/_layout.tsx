@@ -7,7 +7,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right', 'bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#0F1A12' }} edges={['top', 'left', 'right', 'bottom']}>
         <StatusBar style="light" />
         <GameBoard />
       </SafeAreaView>

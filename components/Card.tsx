@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../types/gameTypes';
+import { COLORS } from '../constants/Colors';
 import { IMAGES } from '../utils/assets';
 
 interface CardProps {
@@ -10,6 +11,13 @@ interface CardProps {
   isInteractive?: boolean;
 }
 
+const SUIT_COLORS: Record<string, string> = {
+  hearts: COLORS.hearts,
+  diamonds: COLORS.diamonds,
+  clubs: COLORS.clubs,
+  spades: COLORS.spades,
+};
+
 export const CardComponent: React.FC<CardProps> = ({
   card,
   style,
@@ -17,9 +25,7 @@ export const CardComponent: React.FC<CardProps> = ({
   isInteractive = true,
 }) => {
   const [dimensions, setDimensions] = React.useState({ width: 80, height: 120 });
-  const suitColor = card.suit === 'hearts' ? '#FF4444' :
-    card.suit === 'diamonds' ? '#ffa500ff' :
-      card.suit === 'clubs' ? '#197a29ff' : '#333333';
+  const suitColor = SUIT_COLORS[card.suit] || COLORS.spades;
 
   const cornerRankFontSize = dimensions.width * 0.3;
   const cornerSuitSize = dimensions.width * 0.25;
@@ -43,10 +49,7 @@ export const CardComponent: React.FC<CardProps> = ({
     >
       {card.isFaceUp ? (
         <View style={styles.faceUpCard}>
-          {/* White card background */}
           <View style={styles.cardWhiteBackground} />
-
-          {/* Top row: rank on left, suit on right */}
 
           {/* Top-left corner - Rank */}
           <View style={[styles.topLeftCorner, { top: cornerRankVertical, left: cornerRankSuitHorizontal }]}>
@@ -78,9 +81,7 @@ export const CardComponent: React.FC<CardProps> = ({
             />
           </View>
 
-          {/* Bottom row: suit on left, rank on right (both positioned at opposite corners) */}
-
-          {/* Bottom-left corner - Suit (positioned like bottom-left rank would be) */}
+          {/* Bottom-left corner - Suit */}
           <View style={[styles.bottomLeftCorner, { bottom: cornerSuitVertical, left: cornerRankSuitHorizontal }]}>
             <Image
               source={IMAGES[card.suit]}
@@ -96,7 +97,7 @@ export const CardComponent: React.FC<CardProps> = ({
             />
           </View>
 
-          {/* Bottom-right corner - Rank (positioned like bottom-right rank would be) */}
+          {/* Bottom-right corner - Rank */}
           <View style={[styles.bottomRightCorner, { bottom: cornerRankVertical, right: cornerRankSuitHorizontal }]}>
             <Text style={[styles.cornerRank, {
               color: suitColor,
@@ -123,17 +124,21 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     overflow: 'hidden',
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(0, 0, 0, 0.15)',
     aspectRatio: 80 / 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 3,
+    elevation: 4,
   },
   faceUpCard: {
     flex: 1,
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderRadius: 1,
+    borderRadius: 5,
     padding: 8,
-    borderColor: 'rgba(0,0,0,0.15)',
     overflow: 'hidden',
     position: 'relative',
   },
@@ -143,7 +148,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.cardFace,
   },
   topLeftCorner: {
     position: 'absolute',
@@ -180,12 +185,12 @@ const styles = StyleSheet.create({
     height: '43%',
     resizeMode: 'contain',
     aspectRatio: 1,
+    opacity: 0.85,
   },
   cardBackContainer: {
     flex: 1,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 5,
   },
   cardBackImage: {
     width: '100%',
@@ -198,21 +203,21 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(0, 20, 40, 0.15)',
+    borderRadius: 5,
   },
   hoveredCard: {
-    transform: [{ translateY: -5 }],
-    borderColor: '#4a90e2',
+    transform: [{ translateY: -4 }],
+    borderColor: COLORS.selectionBlue,
     borderWidth: 2,
-    shadowColor: '#4a90e2',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
+    shadowColor: COLORS.selectionBlue,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
     elevation: 16,
     zIndex: 100,
   },
   nonInteractiveCard: {
-    opacity: 0.9,
+    opacity: 0.88,
   },
 });
