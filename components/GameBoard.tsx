@@ -752,67 +752,35 @@ export const GameBoard: React.FC = () => {
                     </View>
                 )}
 
-                {/* Tooltip bubble */}
-                {activeTooltip && (
-                    <Animated.View style={[styles.tooltipContainer, { opacity: tooltipOpacity }]} pointerEvents="none">
-                        <View style={styles.tooltipBubble}>
-                            <Text style={styles.tooltipText}>{BUTTON_DESCRIPTIONS[activeTooltip]}</Text>
-                        </View>
-                        <View style={styles.tooltipArrow} />
-                    </Animated.View>
-                )}
-
                 <View style={styles.buttonBar}>
-                    <TouchableOpacity
-                        style={[styles.button, styles.buttonNew]}
-                        onPress={handleNewGame}
-                        onPressIn={() => showTooltip('new')}
-                        onPressOut={hideTooltip}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={styles.buttonEmoji}>+</Text>
-                        <Text style={styles.buttonText}>New</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.button, styles.buttonStack]}
-                        onPress={handleDealCards}
-                        onPressIn={() => showTooltip('deal')}
-                        onPressOut={hideTooltip}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={styles.buttonEmoji}>&#x25A6;</Text>
-                        <Text style={styles.buttonText}>Deal</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.button, styles.buttonSolve]}
-                        onPress={handleSolve}
-                        onPressIn={() => showTooltip('solve')}
-                        onPressOut={hideTooltip}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={styles.buttonEmoji}>&#x2728;</Text>
-                        <Text style={styles.buttonText}>Solve</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.button, styles.buttonUndo]}
-                        onPress={handleUndo}
-                        onPressIn={() => showTooltip('undo')}
-                        onPressOut={hideTooltip}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={styles.buttonEmoji}>&#x21B6;</Text>
-                        <Text style={styles.buttonText}>Undo</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.button, styles.buttonDiff]}
-                        onPress={handleDifficulty}
-                        onPressIn={() => showTooltip('diff')}
-                        onPressOut={hideTooltip}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={styles.buttonEmoji}>&#x2699;</Text>
-                        <Text style={styles.buttonText}>Diff</Text>
-                    </TouchableOpacity>
+                    {([
+                        { key: 'new', emoji: '+', label: 'New', color: styles.buttonNew, onPress: handleNewGame },
+                        { key: 'deal', emoji: '\u25A6', label: 'Deal', color: styles.buttonStack, onPress: handleDealCards },
+                        { key: 'solve', emoji: '\u2728', label: 'Solve', color: styles.buttonSolve, onPress: handleSolve },
+                        { key: 'undo', emoji: '\u21B6', label: 'Undo', color: styles.buttonUndo, onPress: handleUndo },
+                        { key: 'diff', emoji: '\u2699', label: 'Diff', color: styles.buttonDiff, onPress: handleDifficulty },
+                    ] as const).map((btn) => (
+                        <View key={btn.key} style={styles.buttonWrapper}>
+                            {activeTooltip === btn.key && (
+                                <Animated.View style={[styles.tooltipContainer, { opacity: tooltipOpacity }]} pointerEvents="none">
+                                    <View style={styles.tooltipBubble}>
+                                        <Text style={styles.tooltipText}>{BUTTON_DESCRIPTIONS[btn.key]}</Text>
+                                    </View>
+                                    <View style={styles.tooltipArrow} />
+                                </Animated.View>
+                            )}
+                            <TouchableOpacity
+                                style={[styles.button, btn.color]}
+                                onPress={btn.onPress}
+                                onPressIn={() => showTooltip(btn.key)}
+                                onPressOut={hideTooltip}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.buttonEmoji}>{btn.emoji}</Text>
+                                <Text style={styles.buttonText}>{btn.label}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ))}
                 </View>
 
                 {/* Completion celebration animation */}
@@ -1061,9 +1029,9 @@ const styles = StyleSheet.create({
         zIndex: 3000,
         elevation: 10,
         gap: 5,
+        overflow: 'visible',
     },
     button: {
-        flex: 1,
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
@@ -1099,40 +1067,50 @@ const styles = StyleSheet.create({
         letterSpacing: 0.3,
     },
 
-    // ── Tooltip ─────────────────────────────────────
+    // ── Button Wrapper + Tooltip ──────────────────────
+    buttonWrapper: {
+        flex: 1,
+        position: 'relative',
+    },
     tooltipContainer: {
+        position: 'absolute',
+        bottom: '100%',
+        left: 0,
+        right: 0,
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingBottom: 4,
+        marginBottom: 4,
+        zIndex: 9999,
+        elevation: 50,
     },
     tooltipBubble: {
-        backgroundColor: 'rgba(15, 23, 42, 0.92)',
-        borderRadius: 10,
-        paddingHorizontal: 14,
-        paddingVertical: 8,
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.4,
         shadowRadius: 8,
-        elevation: 6,
+        elevation: 8,
+        minWidth: 100,
     },
     tooltipText: {
         color: COLORS.textSecondary,
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '500',
         textAlign: 'center',
     },
     tooltipArrow: {
-        width: 10,
-        height: 10,
-        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+        width: 8,
+        height: 8,
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
         borderRightWidth: 1,
         borderBottomWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
         transform: [{ rotate: '45deg' }],
-        marginTop: -6,
+        marginTop: -5,
     },
 
     // ── Logo ────────────────────────────────────────
