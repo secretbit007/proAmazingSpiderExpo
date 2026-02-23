@@ -24,6 +24,14 @@ const MAX_COMPLETED = 8;
 const ICON_SPARKLE_COUNT = 6;
 const CONGRATS_SPARKLE_COUNT = 20;
 
+const BUTTON_DESCRIPTIONS: Record<string, string> = {
+    new: 'Start a fresh game with current difficulty',
+    deal: 'Deal 1 card to each pile from the stock',
+    solve: 'Auto-solve the game showing all moves',
+    undo: 'Undo the last move you made',
+    diff: 'Change the difficulty level (0-9)',
+};
+
 export const GameBoard: React.FC = () => {
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
@@ -33,6 +41,11 @@ export const GameBoard: React.FC = () => {
     const [currentDifficulty, setCurrentDifficulty] = useState<number>(0); // Default to Easy
     const [expandedPileIndex, setExpandedPileIndex] = useState<number | null>(null);
     const pileRefs = useRef<(PileRef | null)[]>([]);
+
+    // Button tooltip state
+    const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+    const tooltipOpacity = useRef(new Animated.Value(0)).current;
+    const tooltipHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Completion animation state
     const [animatingSuit, setAnimatingSuit] = useState<string | null>(null);
@@ -535,6 +548,28 @@ export const GameBoard: React.FC = () => {
         }
     };
 
+    const showTooltip = (key: string) => {
+        if (tooltipHideTimer.current) {
+            clearTimeout(tooltipHideTimer.current);
+            tooltipHideTimer.current = null;
+        }
+        setActiveTooltip(key);
+        Animated.timing(tooltipOpacity, {
+            toValue: 1, duration: 150, useNativeDriver: true,
+        }).start();
+    };
+
+    const hideTooltip = () => {
+        tooltipHideTimer.current = setTimeout(() => {
+            Animated.timing(tooltipOpacity, {
+                toValue: 0, duration: 200, useNativeDriver: true,
+            }).start(() => {
+                setActiveTooltip(null);
+            });
+            tooltipHideTimer.current = null;
+        }, 800);
+    };
+
     const handleOutsideClick = () => {
         // Collapse all expanded piles
         pileRefs.current.forEach(pileRef => {
@@ -717,24 +752,64 @@ export const GameBoard: React.FC = () => {
                     </View>
                 )}
 
+                {/* Tooltip bubble */}
+                {activeTooltip && (
+                    <Animated.View style={[styles.tooltipContainer, { opacity: tooltipOpacity }]} pointerEvents="none">
+                        <View style={styles.tooltipBubble}>
+                            <Text style={styles.tooltipText}>{BUTTON_DESCRIPTIONS[activeTooltip]}</Text>
+                        </View>
+                        <View style={styles.tooltipArrow} />
+                    </Animated.View>
+                )}
+
                 <View style={styles.buttonBar}>
-                    <TouchableOpacity style={[styles.button, styles.buttonNew]} onPress={handleNewGame} activeOpacity={0.7}>
+                    <TouchableOpacity
+                        style={[styles.button, styles.buttonNew]}
+                        onPress={handleNewGame}
+                        onPressIn={() => showTooltip('new')}
+                        onPressOut={hideTooltip}
+                        activeOpacity={0.7}
+                    >
                         <Text style={styles.buttonEmoji}>+</Text>
                         <Text style={styles.buttonText}>New</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.button, styles.buttonStack]} onPress={handleDealCards} activeOpacity={0.7}>
+                    <TouchableOpacity
+                        style={[styles.button, styles.buttonStack]}
+                        onPress={handleDealCards}
+                        onPressIn={() => showTooltip('deal')}
+                        onPressOut={hideTooltip}
+                        activeOpacity={0.7}
+                    >
                         <Text style={styles.buttonEmoji}>&#x25A6;</Text>
                         <Text style={styles.buttonText}>Deal</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.button, styles.buttonSolve]} onPress={handleSolve} activeOpacity={0.7}>
+                    <TouchableOpacity
+                        style={[styles.button, styles.buttonSolve]}
+                        onPress={handleSolve}
+                        onPressIn={() => showTooltip('solve')}
+                        onPressOut={hideTooltip}
+                        activeOpacity={0.7}
+                    >
                         <Text style={styles.buttonEmoji}>&#x2728;</Text>
                         <Text style={styles.buttonText}>Solve</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.button, styles.buttonUndo]} onPress={handleUndo} activeOpacity={0.7}>
+                    <TouchableOpacity
+                        style={[styles.button, styles.buttonUndo]}
+                        onPress={handleUndo}
+                        onPressIn={() => showTooltip('undo')}
+                        onPressOut={hideTooltip}
+                        activeOpacity={0.7}
+                    >
                         <Text style={styles.buttonEmoji}>&#x21B6;</Text>
                         <Text style={styles.buttonText}>Undo</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.button, styles.buttonDiff]} onPress={handleDifficulty} activeOpacity={0.7}>
+                    <TouchableOpacity
+                        style={[styles.button, styles.buttonDiff]}
+                        onPress={handleDifficulty}
+                        onPressIn={() => showTooltip('diff')}
+                        onPressOut={hideTooltip}
+                        activeOpacity={0.7}
+                    >
                         <Text style={styles.buttonEmoji}>&#x2699;</Text>
                         <Text style={styles.buttonText}>Diff</Text>
                     </TouchableOpacity>
@@ -1022,6 +1097,42 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         fontSize: 11,
         letterSpacing: 0.3,
+    },
+
+    // ── Tooltip ─────────────────────────────────────
+    tooltipContainer: {
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingBottom: 4,
+    },
+    tooltipBubble: {
+        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    tooltipText: {
+        color: COLORS.textSecondary,
+        fontSize: 12,
+        fontWeight: '500',
+        textAlign: 'center',
+    },
+    tooltipArrow: {
+        width: 10,
+        height: 10,
+        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+        borderRightWidth: 1,
+        borderBottomWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        transform: [{ rotate: '45deg' }],
+        marginTop: -6,
     },
 
     // ── Logo ────────────────────────────────────────
