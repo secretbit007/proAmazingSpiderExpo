@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground, Pressable, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
 import { COLORS } from '../constants/Colors';
@@ -46,8 +46,6 @@ export const GameBoard: React.FC = () => {
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
     const tooltipOpacity = useRef(new Animated.Value(0)).current;
     const tooltipHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const tooltipHoverActive = useRef<string | null>(null);
-    const tooltipPressActive = useRef<string | null>(null);
 
     // Completion animation state
     const [animatingSuit, setAnimatingSuit] = useState<string | null>(null);
@@ -561,35 +559,15 @@ export const GameBoard: React.FC = () => {
         }).start();
     };
 
-    const dismissTooltip = () => {
-        if (tooltipHoverActive.current || tooltipPressActive.current) return;
-        if (tooltipHideTimer.current) clearTimeout(tooltipHideTimer.current);
+    const hideTooltip = () => {
         tooltipHideTimer.current = setTimeout(() => {
             Animated.timing(tooltipOpacity, {
                 toValue: 0, duration: 200, useNativeDriver: true,
-            }).start(() => { setActiveTooltip(null); });
+            }).start(() => {
+                setActiveTooltip(null);
+            });
             tooltipHideTimer.current = null;
-        }, 400);
-    };
-
-    const handleButtonHoverIn = (key: string) => {
-        tooltipHoverActive.current = key;
-        showTooltip(key);
-    };
-
-    const handleButtonHoverOut = () => {
-        tooltipHoverActive.current = null;
-        dismissTooltip();
-    };
-
-    const handleButtonPressIn = (key: string) => {
-        tooltipPressActive.current = key;
-        showTooltip(key);
-    };
-
-    const handleButtonPressOut = () => {
-        tooltipPressActive.current = null;
-        dismissTooltip();
+        }, 800);
     };
 
     const handleOutsideClick = () => {
@@ -791,17 +769,16 @@ export const GameBoard: React.FC = () => {
                                     <View style={styles.tooltipArrow} />
                                 </Animated.View>
                             )}
-                            <Pressable
-                                style={({ pressed }) => [styles.button, btn.color, pressed && { opacity: 0.7 }]}
+                            <TouchableOpacity
+                                style={[styles.button, btn.color]}
                                 onPress={btn.onPress}
-                                onPressIn={() => handleButtonPressIn(btn.key)}
-                                onPressOut={handleButtonPressOut}
-                                onHoverIn={() => handleButtonHoverIn(btn.key)}
-                                onHoverOut={handleButtonHoverOut}
+                                onPressIn={() => showTooltip(btn.key)}
+                                onPressOut={hideTooltip}
+                                activeOpacity={0.7}
                             >
                                 <Text style={styles.buttonEmoji}>{btn.emoji}</Text>
                                 <Text style={styles.buttonText}>{btn.label}</Text>
-                            </Pressable>
+                            </TouchableOpacity>
                         </View>
                     ))}
                 </View>
