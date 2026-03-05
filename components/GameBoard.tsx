@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground, Pressable, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
-import { COLORS } from '../constants/Colors';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
+import { COLORS } from '../constants/Colors';
 import { IMAGES, preloadImages } from '../utils/assets';
 import { DifficultyModal } from './DifficultyModal';
 import { Pile, PileRef } from './Pile';
@@ -523,7 +523,7 @@ export const GameBoard: React.FC = () => {
                 // Cycle through all states with delay
                 for (let i = 0; i < newStates.length; i++) {
                     setGameState(newStates[i]);
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise(resolve => setTimeout(resolve, 1));
                 }
                 return;
             }
