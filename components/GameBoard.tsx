@@ -4,7 +4,7 @@ import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
 import { COLORS } from '../constants/Colors';
 import { IMAGES, preloadImages } from '../utils/assets';
-import { DifficultyModal } from './DifficultyModal';
+import { HelpModal } from './HelpModal';
 import { Pile, PileRef } from './Pile';
 
 const SPARKLE_COUNT = 8;
@@ -29,7 +29,7 @@ const BUTTON_DESCRIPTIONS: Record<string, string> = {
     deal: 'Deal 1 card to each pile from the stock',
     solve: 'Auto-solve the game showing all moves',
     undo: 'Undo the last move you made',
-    diff: 'Change the difficulty level (0-9)',
+    help: 'Read game rules and strategy tips',
 };
 
 export const GameBoard: React.FC = () => {
@@ -37,8 +37,7 @@ export const GameBoard: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [hoveredCard, setHoveredCard] = useState<{ pileIndex: number; cardIndex: number } | null>(null);
-    const [showDifficultyModal, setShowDifficultyModal] = useState<boolean>(false);
-    const [currentDifficulty, setCurrentDifficulty] = useState<number>(0); // Default to Easy
+    const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
     const [expandedPileIndex, setExpandedPileIndex] = useState<number | null>(null);
     const pileRefs = useRef<(PileRef | null)[]>([]);
 
@@ -452,7 +451,7 @@ export const GameBoard: React.FC = () => {
     const handleNewGame = async () => {
         try {
             setLoading(true);
-            const newState = await gameService.startNewGame(currentDifficulty);
+            const newState = await gameService.startNewGame(0);
             setGameState(newState[0]);
         } catch (err) {
             
@@ -530,22 +529,8 @@ export const GameBoard: React.FC = () => {
         }
     };
 
-    const handleDifficulty = () => {
-        setShowDifficultyModal(true);
-    };
-
-    const handleDifficultySelect = async (difficulty: number) => {
-        try {
-            setLoading(true);
-            const state = await gameService.startNewGame(difficulty);
-            setGameState(state[0]);
-            setCurrentDifficulty(difficulty);
-            setError(null);
-        } catch (err) {
-            setError('Failed to start new game with selected difficulty');
-        } finally {
-            setLoading(false);
-        }
+    const handleHelp = () => {
+        setShowHelpModal(true);
     };
 
     const showTooltip = (key: string) => {
@@ -758,7 +743,7 @@ export const GameBoard: React.FC = () => {
                         { key: 'deal', emoji: '\u25A6', label: 'Deal', color: styles.buttonStack, onPress: handleDealCards },
                         { key: 'solve', emoji: '\u2728', label: 'Solve', color: styles.buttonSolve, onPress: handleSolve },
                         { key: 'undo', emoji: '\u21B6', label: 'Undo', color: styles.buttonUndo, onPress: handleUndo },
-                        { key: 'diff', emoji: '\u2699', label: 'Diff', color: styles.buttonDiff, onPress: handleDifficulty },
+                        { key: 'help', emoji: '?', label: 'Help', color: styles.buttonHelp, onPress: handleHelp },
                     ] as const).map((btn) => (
                         <View key={btn.key} style={styles.buttonWrapper}>
                             {activeTooltip === btn.key && (
@@ -849,11 +834,9 @@ export const GameBoard: React.FC = () => {
                     </View>
                 )}
 
-                <DifficultyModal
-                    visible={showDifficultyModal}
-                    onClose={() => setShowDifficultyModal(false)}
-                    onDifficultySelect={handleDifficultySelect}
-                    currentDifficulty={currentDifficulty}
+                <HelpModal
+                    visible={showHelpModal}
+                    onClose={() => setShowHelpModal(false)}
                 />
 
                 {/* Congratulations overlay */}
@@ -1052,7 +1035,7 @@ const styles = StyleSheet.create({
     buttonUndo: {
         backgroundColor: COLORS.buttonMuted,
     },
-    buttonDiff: {
+    buttonHelp: {
         backgroundColor: '#D97706',
     },
     buttonEmoji: {
