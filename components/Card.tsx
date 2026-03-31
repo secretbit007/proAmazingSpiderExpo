@@ -1,6 +1,6 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import { Card } from '../types/gameTypes';
+import { Image, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { Card, Suit } from '../types/gameTypes';
 import { COLORS } from '../constants/Colors';
 import { IMAGES } from '../utils/assets';
 
@@ -18,107 +18,7 @@ const SUIT_COLORS: Record<string, string> = {
   spades: COLORS.spades,
 };
 
-/**
- * Corner rank/suit scale from a fixed width, not onLayout.
- * After a move, the card remounts and can briefly lay out at a much wider parent
- * before the pile clamps to maxWidth 80 — measured width then spikes and corner
- * art looks huge for a frame (flash). Pile maxWidth matches this.
- */
-const CARD_CORNER_BASE_WIDTH = 80;
-const CORNER_METRICS = {
-  cornerRankFontSize: CARD_CORNER_BASE_WIDTH * 0.3,
-  cornerSuitSize: CARD_CORNER_BASE_WIDTH * 0.25,
-  cornerSuitVertical: CARD_CORNER_BASE_WIDTH * 0.1,
-  cornerRankVertical: CARD_CORNER_BASE_WIDTH * 0.05,
-  cornerRankSuitHorizontal: CARD_CORNER_BASE_WIDTH * 0.1,
-} as const;
-
-export const CardComponent: React.FC<CardProps> = ({
-  card,
-  style,
-  isHovered = false,
-  isInteractive = true,
-}) => {
-  const suitColor = SUIT_COLORS[card.suit] || COLORS.spades;
-
-  return (
-    <View style={[
-      styles.cardContainer,
-      style,
-      isHovered && styles.hoveredCard,
-      !isInteractive && styles.nonInteractiveCard,
-    ]}
-    >
-      {card.isFaceUp ? (
-        <View style={styles.faceUpCard}>
-          <View style={styles.cardWhiteBackground} />
-
-          {/* Top-left corner - Rank */}
-          <View style={[styles.topLeftCorner, { top: CORNER_METRICS.cornerRankVertical, left: CORNER_METRICS.cornerRankSuitHorizontal }]}>
-            <Text style={[styles.cornerRank, { color: suitColor, fontSize: CORNER_METRICS.cornerRankFontSize }]}>
-              {card.rank}
-            </Text>
-          </View>
-
-          {/* Top-right corner - Suit */}
-          <View style={[styles.topRightCorner, { top: CORNER_METRICS.cornerSuitVertical, right: CORNER_METRICS.cornerRankSuitHorizontal }]}>
-            <Image
-              source={IMAGES[card.suit]}
-              style={[
-                styles.cornerSuit,
-                {
-                  tintColor: suitColor,
-                  width: CORNER_METRICS.cornerSuitSize,
-                  height: CORNER_METRICS.cornerSuitSize,
-                },
-              ]}
-            />
-          </View>
-
-          {/* Center suit symbol */}
-          <View style={styles.centerSymbol}>
-            <Image
-              source={IMAGES[card.suit]}
-              style={[styles.centerSuit, { tintColor: suitColor }]}
-            />
-          </View>
-
-          {/* Bottom-left corner - Suit */}
-          <View style={[styles.bottomLeftCorner, { bottom: CORNER_METRICS.cornerSuitVertical, left: CORNER_METRICS.cornerRankSuitHorizontal }]}>
-            <Image
-              source={IMAGES[card.suit]}
-              style={[
-                styles.cornerSuit,
-                {
-                  tintColor: suitColor,
-                  width: CORNER_METRICS.cornerSuitSize,
-                  height: CORNER_METRICS.cornerSuitSize,
-                  transform: [{ rotate: '180deg' }],
-                },
-              ]}
-            />
-          </View>
-
-          {/* Bottom-right corner - Rank */}
-          <View style={[styles.bottomRightCorner, { bottom: CORNER_METRICS.cornerRankVertical, right: CORNER_METRICS.cornerRankSuitHorizontal }]}>
-            <Text style={[styles.cornerRank, {
-              color: suitColor,
-              fontSize: CORNER_METRICS.cornerRankFontSize,
-              transform: [{ rotate: '180deg' }],
-            }]}>
-              {card.rank}
-            </Text>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.cardBackContainer}>
-          <Image source={IMAGES.card_back} style={styles.cardBackImage} />
-          <View style={styles.cardBackOverlay} />
-        </View>
-      )}
-    </View>
-  );
-};
+const CORNER_SUIT_DISPLAY_SIZE = 80 * 0.25;
 
 const styles = StyleSheet.create({
   cardContainer: {
@@ -180,8 +80,16 @@ const styles = StyleSheet.create({
   cornerRank: {
     fontWeight: '800',
   },
-  cornerSuit: {
+  cornerSuitImage: {
+    width: CORNER_SUIT_DISPLAY_SIZE,
+    height: CORNER_SUIT_DISPLAY_SIZE,
     resizeMode: 'contain',
+  },
+  cornerSuitImageRotated: {
+    width: CORNER_SUIT_DISPLAY_SIZE,
+    height: CORNER_SUIT_DISPLAY_SIZE,
+    resizeMode: 'contain',
+    transform: [{ rotate: '180deg' }],
   },
   centerSuit: {
     height: '43%',
@@ -223,3 +131,115 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
 });
+
+/** Suit images skip re-renders when only hover / pile chrome changes — avoids native Image relayout flicker. */
+const CardCornerSuit = React.memo(function CardCornerSuit({
+  suit,
+  tintColor,
+  rotated,
+}: {
+  suit: Suit;
+  tintColor: string;
+  rotated?: boolean;
+}) {
+  return (
+    <Image
+      source={IMAGES[suit]}
+      style={
+        rotated
+          ? [styles.cornerSuitImageRotated, { tintColor }]
+          : [styles.cornerSuitImage, { tintColor }]
+      }
+    />
+  );
+});
+
+const CardCenterSuit = React.memo(function CardCenterSuit({
+  suit,
+  tintColor,
+}: {
+  suit: Suit;
+  tintColor: string;
+}) {
+  return (
+    <Image
+      source={IMAGES[suit]}
+      style={[styles.centerSuit, { tintColor }]}
+    />
+  );
+});
+
+export const CardComponent: React.FC<CardProps> = ({
+  card,
+  style,
+  isHovered = false,
+  isInteractive = true,
+}) => {
+  const [dimensions, setDimensions] = React.useState({ width: 80, height: 120 });
+  const suitColor = SUIT_COLORS[card.suit] || COLORS.spades;
+
+  const cornerRankFontSize = dimensions.width * 0.3;
+  const cornerSuitVertical = dimensions.width * 0.1;
+  const cornerRankVertical = dimensions.width * 0.05;
+  const cornerRankSuitHorizontal = dimensions.width * 0.1;
+
+  const onLayout = React.useCallback((event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    const w = Math.round(width);
+    const h = Math.round(height);
+    if (w <= 0 || h <= 0) return;
+    setDimensions((prev) =>
+      prev.width === w && prev.height === h ? prev : { width: w, height: h },
+    );
+  }, []);
+
+  return (
+    <View style={[
+      styles.cardContainer,
+      style,
+      isHovered && styles.hoveredCard,
+      !isInteractive && styles.nonInteractiveCard,
+    ]}
+      onLayout={onLayout}
+    >
+      {card.isFaceUp ? (
+        <View style={styles.faceUpCard}>
+          <View style={styles.cardWhiteBackground} />
+
+          <View style={[styles.topLeftCorner, { top: cornerRankVertical, left: cornerRankSuitHorizontal }]}>
+            <Text style={[styles.cornerRank, { color: suitColor, fontSize: cornerRankFontSize }]}>
+              {card.rank}
+            </Text>
+          </View>
+
+          <View style={[styles.topRightCorner, { top: cornerSuitVertical, right: cornerRankSuitHorizontal }]}>
+            <CardCornerSuit suit={card.suit} tintColor={suitColor} />
+          </View>
+
+          <View style={styles.centerSymbol}>
+            <CardCenterSuit suit={card.suit} tintColor={suitColor} />
+          </View>
+
+          <View style={[styles.bottomLeftCorner, { bottom: cornerSuitVertical, left: cornerRankSuitHorizontal }]}>
+            <CardCornerSuit suit={card.suit} tintColor={suitColor} rotated />
+          </View>
+
+          <View style={[styles.bottomRightCorner, { bottom: cornerRankVertical, right: cornerRankSuitHorizontal }]}>
+            <Text style={[styles.cornerRank, {
+              color: suitColor,
+              fontSize: cornerRankFontSize,
+              transform: [{ rotate: '180deg' }],
+            }]}>
+              {card.rank}
+            </Text>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.cardBackContainer}>
+          <Image source={IMAGES.card_back} style={styles.cardBackImage} />
+          <View style={styles.cardBackOverlay} />
+        </View>
+      )}
+    </View>
+  );
+};
