@@ -18,25 +18,51 @@ const SUIT_COLORS: Record<string, string> = {
   spades: COLORS.spades,
 };
 
+/** Ignore layout noise smaller than this (hover borders, flex, sub-pixel). */
+const LAYOUT_STABILITY_PX = 4;
+
+type CardLayoutSize = { width: number; height: number };
+
 export const CardComponent: React.FC<CardProps> = ({
   card,
   style,
   isHovered = false,
   isInteractive = true,
 }) => {
-  const [dimensions, setDimensions] = React.useState({ width: 80, height: 120 });
+  const [dimensions, setDimensions] = React.useState<CardLayoutSize>({ width: 80, height: 120 });
+  const hasSizedRef = React.useRef(false);
   const suitColor = SUIT_COLORS[card.suit] || COLORS.spades;
 
-  const cornerRankFontSize = dimensions.width * 0.3;
-  const cornerSuitSize = dimensions.width * 0.25;
-  const cornerSuitVertical = dimensions.width * 0.1;
-  const cornerRankVertical = dimensions.width * 0.05;
-  const cornerRankSuitHorizontal = dimensions.width * 0.1;
+  const cornerMetrics = React.useMemo(() => {
+    const w = dimensions.width;
+    return {
+      cornerRankFontSize: w * 0.3,
+      cornerSuitSize: w * 0.25,
+      cornerSuitVertical: w * 0.1,
+      cornerRankVertical: w * 0.05,
+      cornerRankSuitHorizontal: w * 0.1,
+    };
+  }, [dimensions.width]);
 
-  const onLayout = (event: LayoutChangeEvent) => {
+  const onLayout = React.useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
-    setDimensions({ width, height });
-  };
+    const w = Math.round(width);
+    const h = Math.round(height);
+    if (w <= 0 || h <= 0) return;
+
+    setDimensions((prev) => {
+      if (!hasSizedRef.current) {
+        hasSizedRef.current = true;
+        return { width: w, height: h };
+      }
+      const dw = Math.abs(prev.width - w);
+      const dh = Math.abs(prev.height - h);
+      if (dw < LAYOUT_STABILITY_PX && dh < LAYOUT_STABILITY_PX) {
+        return prev;
+      }
+      return { width: w, height: h };
+    });
+  }, []);
 
   return (
     <View style={[
@@ -52,22 +78,22 @@ export const CardComponent: React.FC<CardProps> = ({
           <View style={styles.cardWhiteBackground} />
 
           {/* Top-left corner - Rank */}
-          <View style={[styles.topLeftCorner, { top: cornerRankVertical, left: cornerRankSuitHorizontal }]}>
-            <Text style={[styles.cornerRank, { color: suitColor, fontSize: cornerRankFontSize }]}>
+          <View style={[styles.topLeftCorner, { top: cornerMetrics.cornerRankVertical, left: cornerMetrics.cornerRankSuitHorizontal }]}>
+            <Text style={[styles.cornerRank, { color: suitColor, fontSize: cornerMetrics.cornerRankFontSize }]}>
               {card.rank}
             </Text>
           </View>
 
           {/* Top-right corner - Suit */}
-          <View style={[styles.topRightCorner, { top: cornerSuitVertical, right: cornerRankSuitHorizontal }]}>
+          <View style={[styles.topRightCorner, { top: cornerMetrics.cornerSuitVertical, right: cornerMetrics.cornerRankSuitHorizontal }]}>
             <Image
               source={IMAGES[card.suit]}
               style={[
                 styles.cornerSuit,
                 {
                   tintColor: suitColor,
-                  width: cornerSuitSize,
-                  height: cornerSuitSize,
+                  width: cornerMetrics.cornerSuitSize,
+                  height: cornerMetrics.cornerSuitSize,
                 },
               ]}
             />
@@ -82,15 +108,15 @@ export const CardComponent: React.FC<CardProps> = ({
           </View>
 
           {/* Bottom-left corner - Suit */}
-          <View style={[styles.bottomLeftCorner, { bottom: cornerSuitVertical, left: cornerRankSuitHorizontal }]}>
+          <View style={[styles.bottomLeftCorner, { bottom: cornerMetrics.cornerSuitVertical, left: cornerMetrics.cornerRankSuitHorizontal }]}>
             <Image
               source={IMAGES[card.suit]}
               style={[
                 styles.cornerSuit,
                 {
                   tintColor: suitColor,
-                  width: cornerSuitSize,
-                  height: cornerSuitSize,
+                  width: cornerMetrics.cornerSuitSize,
+                  height: cornerMetrics.cornerSuitSize,
                   transform: [{ rotate: '180deg' }],
                 },
               ]}
@@ -98,10 +124,10 @@ export const CardComponent: React.FC<CardProps> = ({
           </View>
 
           {/* Bottom-right corner - Rank */}
-          <View style={[styles.bottomRightCorner, { bottom: cornerRankVertical, right: cornerRankSuitHorizontal }]}>
+          <View style={[styles.bottomRightCorner, { bottom: cornerMetrics.cornerRankVertical, right: cornerMetrics.cornerRankSuitHorizontal }]}>
             <Text style={[styles.cornerRank, {
               color: suitColor,
-              fontSize: cornerRankFontSize,
+              fontSize: cornerMetrics.cornerRankFontSize,
               transform: [{ rotate: '180deg' }],
             }]}>
               {card.rank}
