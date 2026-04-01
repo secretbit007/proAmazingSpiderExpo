@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../types/gameTypes';
 import { COLORS } from '../constants/Colors';
 import { IMAGES } from '../utils/assets';
@@ -18,105 +18,8 @@ const SUIT_COLORS: Record<string, string> = {
   spades: COLORS.spades,
 };
 
-export const CardComponent: React.FC<CardProps> = ({
-  card,
-  style,
-  isHovered = false,
-  isInteractive = true,
-}) => {
-  const [dimensions, setDimensions] = React.useState({ width: 80, height: 120 });
-  const suitColor = SUIT_COLORS[card.suit] || COLORS.spades;
-
-  const cornerRankFontSize = dimensions.width * 0.3;
-  const cornerSuitSize = dimensions.width * 0.25;
-  const cornerSuitVertical = dimensions.width * 0.1;
-  const cornerRankVertical = dimensions.width * 0.05;
-  const cornerRankSuitHorizontal = dimensions.width * 0.1;
-
-  const onLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-    setDimensions({ width, height });
-  };
-
-  return (
-    <View style={[
-      styles.cardContainer,
-      style,
-      isHovered && styles.hoveredCard,
-      !isInteractive && styles.nonInteractiveCard,
-    ]}
-      onLayout={onLayout}
-    >
-      {card.isFaceUp ? (
-        <View style={styles.faceUpCard}>
-          <View style={styles.cardWhiteBackground} />
-
-          {/* Top-left corner - Rank */}
-          <View style={[styles.topLeftCorner, { top: cornerRankVertical, left: cornerRankSuitHorizontal }]}>
-            <Text style={[styles.cornerRank, { color: suitColor, fontSize: cornerRankFontSize }]}>
-              {card.rank}
-            </Text>
-          </View>
-
-          {/* Top-right corner - Suit */}
-          <View style={[styles.topRightCorner, { top: cornerSuitVertical, right: cornerRankSuitHorizontal }]}>
-            <Image
-              source={IMAGES[card.suit]}
-              style={[
-                styles.cornerSuit,
-                {
-                  tintColor: suitColor,
-                  width: cornerSuitSize,
-                  height: cornerSuitSize,
-                },
-              ]}
-            />
-          </View>
-
-          {/* Center suit symbol */}
-          <View style={styles.centerSymbol}>
-            <Image
-              source={IMAGES[card.suit]}
-              style={[styles.centerSuit, { tintColor: suitColor }]}
-            />
-          </View>
-
-          {/* Bottom-left corner - Suit */}
-          <View style={[styles.bottomLeftCorner, { bottom: cornerSuitVertical, left: cornerRankSuitHorizontal }]}>
-            <Image
-              source={IMAGES[card.suit]}
-              style={[
-                styles.cornerSuit,
-                {
-                  tintColor: suitColor,
-                  width: cornerSuitSize,
-                  height: cornerSuitSize,
-                  transform: [{ rotate: '180deg' }],
-                },
-              ]}
-            />
-          </View>
-
-          {/* Bottom-right corner - Rank */}
-          <View style={[styles.bottomRightCorner, { bottom: cornerRankVertical, right: cornerRankSuitHorizontal }]}>
-            <Text style={[styles.cornerRank, {
-              color: suitColor,
-              fontSize: cornerRankFontSize,
-              transform: [{ rotate: '180deg' }],
-            }]}>
-              {card.rank}
-            </Text>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.cardBackContainer}>
-          <Image source={IMAGES.card_back} style={styles.cardBackImage} />
-          <View style={styles.cardBackOverlay} />
-        </View>
-      )}
-    </View>
-  );
-};
+/** Matches card aspect ratio / pile maxWidth — corner art uses this, not onLayout, so positions never jitter. */
+const ART_W = 80;
 
 const styles = StyleSheet.create({
   cardContainer: {
@@ -153,18 +56,26 @@ const styles = StyleSheet.create({
   topLeftCorner: {
     position: 'absolute',
     zIndex: 2,
+    top: ART_W * 0.05,
+    left: ART_W * 0.1,
   },
   topRightCorner: {
     position: 'absolute',
     zIndex: 2,
+    top: ART_W * 0.1,
+    right: ART_W * 0.1,
   },
   bottomLeftCorner: {
     position: 'absolute',
     zIndex: 2,
+    bottom: ART_W * 0.1,
+    left: ART_W * 0.1,
   },
   bottomRightCorner: {
     position: 'absolute',
     zIndex: 2,
+    bottom: ART_W * 0.05,
+    right: ART_W * 0.1,
   },
   centerSymbol: {
     position: 'absolute',
@@ -177,9 +88,18 @@ const styles = StyleSheet.create({
   },
   cornerRank: {
     fontWeight: '800',
+    fontSize: ART_W * 0.3,
   },
   cornerSuit: {
+    width: ART_W * 0.25,
+    height: ART_W * 0.25,
     resizeMode: 'contain',
+  },
+  cornerSuitRotated: {
+    width: ART_W * 0.25,
+    height: ART_W * 0.25,
+    resizeMode: 'contain',
+    transform: [{ rotate: '180deg' }],
   },
   centerSuit: {
     height: '43%',
@@ -221,3 +141,69 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
 });
+
+export const CardComponent: React.FC<CardProps> = ({
+  card,
+  style,
+  isHovered = false,
+  isInteractive = true,
+}) => {
+  const suitColor = SUIT_COLORS[card.suit] || COLORS.spades;
+
+  return (
+    <View style={[
+      styles.cardContainer,
+      style,
+      isHovered && styles.hoveredCard,
+      !isInteractive && styles.nonInteractiveCard,
+    ]}
+    >
+      {card.isFaceUp ? (
+        <View style={styles.faceUpCard}>
+          <View style={styles.cardWhiteBackground} />
+
+          <View style={styles.topLeftCorner}>
+            <Text style={[styles.cornerRank, { color: suitColor }]}>
+              {card.rank}
+            </Text>
+          </View>
+
+          <View style={styles.topRightCorner}>
+            <Image
+              source={IMAGES[card.suit]}
+              style={[styles.cornerSuit, { tintColor: suitColor }]}
+            />
+          </View>
+
+          <View style={styles.centerSymbol}>
+            <Image
+              source={IMAGES[card.suit]}
+              style={[styles.centerSuit, { tintColor: suitColor }]}
+            />
+          </View>
+
+          <View style={styles.bottomLeftCorner}>
+            <Image
+              source={IMAGES[card.suit]}
+              style={[styles.cornerSuitRotated, { tintColor: suitColor }]}
+            />
+          </View>
+
+          <View style={styles.bottomRightCorner}>
+            <Text style={[styles.cornerRank, {
+              color: suitColor,
+              transform: [{ rotate: '180deg' }],
+            }]}>
+              {card.rank}
+            </Text>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.cardBackContainer}>
+          <Image source={IMAGES.card_back} style={styles.cardBackImage} />
+          <View style={styles.cardBackOverlay} />
+        </View>
+      )}
+    </View>
+  );
+};
