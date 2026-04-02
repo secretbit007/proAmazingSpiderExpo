@@ -1,8 +1,11 @@
 import React from 'react';
-import { Image, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../types/gameTypes';
 import { COLORS } from '../constants/Colors';
 import { IMAGES } from '../utils/assets';
+
+/** Matches pile `maxWidth` and card `aspectRatio`; avoids onLayout-driven jumps when corners/fonts recompute. */
+const CARD_FACE_BASE_WIDTH = 80;
 
 interface CardProps {
   card: Card;
@@ -24,19 +27,13 @@ export const CardComponent: React.FC<CardProps> = ({
   isHovered = false,
   isInteractive = true,
 }) => {
-  const [dimensions, setDimensions] = React.useState({ width: 80, height: 120 });
   const suitColor = SUIT_COLORS[card.suit] || COLORS.spades;
 
-  const cornerRankFontSize = dimensions.width * 0.3;
-  const cornerSuitSize = dimensions.width * 0.25;
-  const cornerSuitVertical = dimensions.width * 0.1;
-  const cornerRankVertical = dimensions.width * 0.05;
-  const cornerRankSuitHorizontal = dimensions.width * 0.1;
-
-  const onLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-    setDimensions({ width, height });
-  };
+  const cornerRankFontSize = CARD_FACE_BASE_WIDTH * 0.3;
+  const cornerSuitSize = CARD_FACE_BASE_WIDTH * 0.25;
+  const cornerSuitVertical = CARD_FACE_BASE_WIDTH * 0.1;
+  const cornerRankVertical = CARD_FACE_BASE_WIDTH * 0.05;
+  const cornerRankSuitHorizontal = CARD_FACE_BASE_WIDTH * 0.1;
 
   return (
     <View style={[
@@ -45,7 +42,6 @@ export const CardComponent: React.FC<CardProps> = ({
       isHovered && styles.hoveredCard,
       !isInteractive && styles.nonInteractiveCard,
     ]}
-      onLayout={onLayout}
     >
       {card.isFaceUp ? (
         <View style={styles.faceUpCard}>
