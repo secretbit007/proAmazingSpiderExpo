@@ -10,16 +10,15 @@ interface HelpModalProps {
 const HELP_PARAGRAPHS = [
   'AmazingSpider is a computerised version of Spider, which is a traditional 2 pack card patience. AmazingSpider is much faster and more fun to play.',
   'In Spider 54 cards are initially dealt in 4 columns of 6 cards and 6 columns of 5 cards. The remaining 50 cards are held in a stack, to be dealt 10 cards at a time when no more moves are possible.',
-  'The aim is to order the cards in suits from king down to ace.',
-  'When a whole suit of 13 cards has been formed, it can be removed from the display by clicking on the king.',
+  'The aim is to order the cards in suits from king down to ace. When a whole suit of 13 cards has been formed, it can be removed by clicking on the king.',
   'In Spider, cards can only be moved 1 at a time unless they are the same suit and in descending sequence. Cards can only be moved on to another card of immediately greater rank, or into empty columns. Kings can only be moved into empty columns.',
-  'However, AmazingSpider allows a mixed suit column of cards to be moved, provided there is a logical path. To make that happen, click on the highest card in that mixed suit, when the program will generate the required moves.',
+  'However, AmazingSpider allows a mixed suit column of cards to be moved, provided there is a logical path.',
   'The Solve button allows same suit fragments to be joined - useful towards the end of a game.',
   'Empty columns are valuable. Therefore it is best not to move kings into empty columns as they cannot be moved again.',
   'The best strategy is to move as many cards as possible on to columns headed by a king, thereby freeing up other columns.',
   'Where columns are not headed by a king it is best to organise the cards into suits so as to facilitate later movement. But there is no hurry to organise into suits in columns headed by kings.',
   'Create as many empty columns as possible, only moving kings when nothing else appeals.',
-  'Spider requires that there be no empty columns before another 10 cards are dealt. Clicking Deal will deal another 10 cards.',
+  'Spider requires that there be no empty columns before another 10 cards are dealt.',
 ];
 
 export const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
