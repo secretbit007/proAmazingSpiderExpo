@@ -23,6 +23,7 @@ const SUIT_COLOR_MAP: Record<string, string> = {
 const MAX_COMPLETED = 8;
 const ICON_SPARKLE_COUNT = 6;
 const CONGRATS_SPARKLE_COUNT = 20;
+const REPLAY_DELAY_MS = 80;
 
 const BUTTON_DESCRIPTIONS: Record<string, string> = {
     new: 'Start a fresh game with current difficulty',
@@ -36,10 +37,16 @@ export const GameBoard: React.FC = () => {
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [actionError, setActionError] = useState<string | null>(null);
+    const [isSolving, setIsSolving] = useState<boolean>(false);
+    const [isMovingCard, setIsMovingCard] = useState<boolean>(false);
     const [hoveredCard, setHoveredCard] = useState<{ pileIndex: number; cardIndex: number } | null>(null);
     const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
     const [expandedPileIndex, setExpandedPileIndex] = useState<number | null>(null);
     const pileRefs = useRef<(PileRef | null)[]>([]);
+    const isMountedRef = useRef(true);
+    const solveRunIdRef = useRef(0);
+    const moveRunIdRef = useRef(0);
 
     // Button tooltip state
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -127,6 +134,40 @@ export const GameBoard: React.FC = () => {
         };
         initGame();
     }, []);
+
+    useEffect(() => {
+        return () => {
+            isMountedRef.current = false;
+            solveRunIdRef.current += 1;
+            moveRunIdRef.current += 1;
+        };
+    }, []);
+
+    const isRunActive = (runId: number, runRef: React.MutableRefObject<number>) => {
+        return runId === runRef.current && isMountedRef.current;
+    };
+
+    const playStateSequence = async (
+        states: GameState[],
+        runId: number,
+        runRef: React.MutableRefObject<number>
+    ): Promise<boolean> => {
+        if (!states || states.length === 0) return false;
+        if (!isRunActive(runId, runRef)) return false;
+
+        if (states.length === 1) {
+            setGameState(states[0]);
+            return true;
+        }
+
+        for (let i = 0; i < states.length; i++) {
+            if (!isRunActive(runId, runRef)) return false;
+            setGameState(states[i]);
+            await new Promise(resolve => setTimeout(resolve, REPLAY_DELAY_MS));
+        }
+
+        return true;
+    };
 
     // Start the next animation from the queue
     const startNextAnimation = () => {
@@ -425,46 +466,55 @@ export const GameBoard: React.FC = () => {
     }, [gameState]);
 
     const handleDealCards = async () => {
-        if (!gameState) return;
+        if (!gameState || isSolving || isMovingCard) return;
 
         try {
-            // setLoading(true);
             const newState = await gameService.dealCards();
             setGameState(newState[0]);
+            setActionError(null);
         } catch (err) {
-            
+            setActionError('Deal failed. Please try again.');
         }
     };
 
     const handleUndo = async () => {
-        if (!gameState) return;
+        if (!gameState || isSolving || isMovingCard) return;
 
         try {
-            // setLoading(true);
             const newState = await gameService.undoMove();
             setGameState(newState[0]);
+            setActionError(null);
         } catch (err) {
-            
+            setActionError('Undo failed. Please try again.');
         }
     };
 
     const handleNewGame = async () => {
         try {
+            solveRunIdRef.current += 1;
+            moveRunIdRef.current += 1;
+            setIsSolving(false);
+            setIsMovingCard(false);
             setLoading(true);
+            setActionError(null);
             const newState = await gameService.startNewGame(0);
             setGameState(newState[0]);
         } catch (err) {
-            
+            setActionError('Failed to start a new game.');
         } finally {
             setLoading(false);
         }
     };
 
     const handleCardPress = async (pileIndex: number, cardIndex: number) => {
-        if (!gameState) return;
+        if (!gameState || isSolving || isMovingCard) return;
+
+        const runId = moveRunIdRef.current + 1;
+        moveRunIdRef.current = runId;
+        setIsMovingCard(true);
+        setActionError(null);
 
         try {
-            // setLoading(true);
             // For Spider Solitaire, we typically move the card and all cards below it
             // to the first valid destination pile we find
             const fromRow = gameState.piles[pileIndex].lastCardIndex - (gameState.piles[pileIndex].cards.length - cardIndex - 1);
@@ -477,24 +527,16 @@ export const GameBoard: React.FC = () => {
                 undefined,
             );
 
-            if (newStates && newStates.length > 0) {
-                // If only one state, update immediately
-                if (newStates.length === 1) {
-                    setGameState(newStates[0]);
-                    return;
-                }
-
-                // Cycle through all states with delay
-                for (let i = 0; i < newStates.length; i++) {
-                    setGameState(newStates[i]);
-                    await new Promise(resolve => setTimeout(resolve, 1));
-                }
-                return;
-            }
+            await playStateSequence(newStates, runId, moveRunIdRef);
         } catch (err) {
-            
+            if (isRunActive(runId, moveRunIdRef)) {
+                setActionError('Move failed. Please try another move.');
+            }
         } finally {
             setHoveredCard(null);
+            if (isRunActive(runId, moveRunIdRef)) {
+                setIsMovingCard(false);
+            }
         }
     };
 
@@ -507,25 +549,26 @@ export const GameBoard: React.FC = () => {
     };
 
     const handleSolve = async () => {
+        if (isSolving) return;
+
+        const runId = solveRunIdRef.current + 1;
+        solveRunIdRef.current = runId;
+        moveRunIdRef.current += 1;
+        setIsMovingCard(false);
+        setIsSolving(true);
+        setActionError(null);
+
         try {
             const newStates = await gameService.solveGame();
-
-            if (newStates && newStates.length > 0) {
-                // If only one state, update immediately
-                if (newStates.length === 1) {
-                    setGameState(newStates[0]);
-                    return;
-                }
-
-                // Cycle through all states with delay
-                for (let i = 0; i < newStates.length; i++) {
-                    setGameState(newStates[i]);
-                    await new Promise(resolve => setTimeout(resolve, 1));
-                }
-                return;
-            }
+            await playStateSequence(newStates, runId, solveRunIdRef);
         } catch (err) {
-            
+            if (isRunActive(runId, solveRunIdRef)) {
+                setActionError('Solve failed. Please try again.');
+            }
+        } finally {
+            if (isRunActive(runId, solveRunIdRef)) {
+                setIsSolving(false);
+            }
         }
     };
 
@@ -739,11 +782,11 @@ export const GameBoard: React.FC = () => {
 
                 <View style={styles.buttonBar}>
                     {([
-                        { key: 'new', emoji: '+', label: 'New', color: styles.buttonNew, onPress: handleNewGame },
-                        { key: 'deal', emoji: '\u25A6', label: 'Deal', color: styles.buttonStack, onPress: handleDealCards },
-                        { key: 'solve', emoji: '\u2728', label: 'Solve', color: styles.buttonSolve, onPress: handleSolve },
-                        { key: 'undo', emoji: '\u21B6', label: 'Undo', color: styles.buttonUndo, onPress: handleUndo },
-                        { key: 'help', emoji: '?', label: 'Help', color: styles.buttonHelp, onPress: handleHelp },
+                        { key: 'new', emoji: '+', label: 'New', color: styles.buttonNew, onPress: handleNewGame, disabled: loading },
+                        { key: 'deal', emoji: '\u25A6', label: 'Deal', color: styles.buttonStack, onPress: handleDealCards, disabled: isSolving || isMovingCard },
+                        { key: 'solve', emoji: '\u2728', label: isSolving ? 'Solving' : 'Solve', color: styles.buttonSolve, onPress: handleSolve, disabled: isSolving },
+                        { key: 'undo', emoji: '\u21B6', label: 'Undo', color: styles.buttonUndo, onPress: handleUndo, disabled: isSolving || isMovingCard },
+                        { key: 'help', emoji: '?', label: 'Help', color: styles.buttonHelp, onPress: handleHelp, disabled: false },
                     ] as const).map((btn) => (
                         <View key={btn.key} style={styles.buttonWrapper}>
                             {activeTooltip === btn.key && (
@@ -755,11 +798,12 @@ export const GameBoard: React.FC = () => {
                                 </Animated.View>
                             )}
                             <TouchableOpacity
-                                style={[styles.button, btn.color]}
+                                style={[styles.button, btn.color, btn.disabled ? styles.buttonDisabled : null]}
                                 onPress={btn.onPress}
                                 onPressIn={() => showTooltip(btn.key)}
                                 onPressOut={hideTooltip}
                                 activeOpacity={0.7}
+                                disabled={btn.disabled}
                             >
                                 <Text style={styles.buttonEmoji}>{btn.emoji}</Text>
                                 <Text style={styles.buttonText}>{btn.label}</Text>
@@ -767,6 +811,11 @@ export const GameBoard: React.FC = () => {
                         </View>
                     ))}
                 </View>
+                {actionError && (
+                    <View style={styles.inlineErrorContainer}>
+                        <Text style={styles.inlineErrorText}>{actionError}</Text>
+                    </View>
+                )}
 
                 {/* Completion celebration animation */}
                 {animatingSuit && (
@@ -998,6 +1047,19 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         fontSize: 15,
     },
+    inlineErrorContainer: {
+        backgroundColor: 'rgba(255, 59, 48, 0.18)',
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255, 59, 48, 0.5)',
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+    },
+    inlineErrorText: {
+        color: '#FF8A80',
+        fontSize: 12,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
 
     // ── Button Bar ──────────────────────────────────
     buttonBar: {
@@ -1022,6 +1084,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 4,
         borderRadius: 10,
         minHeight: 44,
+    },
+    buttonDisabled: {
+        opacity: 0.6,
     },
     buttonNew: {
         backgroundColor: COLORS.buttonSuccess,
