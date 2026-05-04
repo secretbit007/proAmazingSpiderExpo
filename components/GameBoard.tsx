@@ -25,6 +25,14 @@ const ICON_SPARKLE_COUNT = 6;
 const CONGRATS_SPARKLE_COUNT = 20;
 const REPLAY_DELAY_MS = 80;
 
+function actionErrorMessage(err: unknown, fallback: string): string {
+    if (err instanceof Error && err.message.trim()) {
+        const m = err.message.trim();
+        return m.length > 180 ? `${m.slice(0, 177)}…` : m;
+    }
+    return fallback;
+}
+
 const BUTTON_DESCRIPTIONS: Record<string, string> = {
     new: 'Start a fresh game with current difficulty',
     deal: 'Deal 1 card to each pile from the stock',
@@ -135,7 +143,10 @@ export const GameBoard: React.FC = () => {
         initGame();
     }, []);
 
+    // Strict Mode runs mount → unmount → mount; without resetting refs, cleanup leaves
+    // isMountedRef false forever and move/solve think every run was cancelled.
     useEffect(() => {
+        isMountedRef.current = true;
         return () => {
             isMountedRef.current = false;
             solveRunIdRef.current += 1;
@@ -473,7 +484,7 @@ export const GameBoard: React.FC = () => {
             setGameState(newState[0]);
             setActionError(null);
         } catch (err) {
-            setActionError('Deal failed. Please try again.');
+            setActionError(actionErrorMessage(err, 'Deal failed. Please try again.'));
         }
     };
 
@@ -485,7 +496,7 @@ export const GameBoard: React.FC = () => {
             setGameState(newState[0]);
             setActionError(null);
         } catch (err) {
-            setActionError('Undo failed. Please try again.');
+            setActionError(actionErrorMessage(err, 'Undo failed. Please try again.'));
         }
     };
 
@@ -500,7 +511,7 @@ export const GameBoard: React.FC = () => {
             const newState = await gameService.startNewGame(0);
             setGameState(newState[0]);
         } catch (err) {
-            setActionError('Failed to start a new game.');
+            setActionError(actionErrorMessage(err, 'Failed to start a new game.'));
         } finally {
             setLoading(false);
         }
@@ -530,7 +541,7 @@ export const GameBoard: React.FC = () => {
             await playStateSequence(newStates, runId, moveRunIdRef);
         } catch (err) {
             if (isRunActive(runId, moveRunIdRef)) {
-                setActionError('Move failed. Please try another move.');
+                setActionError(actionErrorMessage(err, 'Move failed. Please try another move.'));
             }
         } finally {
             setHoveredCard(null);
@@ -563,7 +574,7 @@ export const GameBoard: React.FC = () => {
             await playStateSequence(newStates, runId, solveRunIdRef);
         } catch (err) {
             if (isRunActive(runId, solveRunIdRef)) {
-                setActionError('Solve failed. Please try again.');
+                setActionError(actionErrorMessage(err, 'Solve failed. Please try again.'));
             }
         } finally {
             if (isRunActive(runId, solveRunIdRef)) {
