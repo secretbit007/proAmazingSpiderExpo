@@ -111,6 +111,10 @@ function isSolveResponse(body: unknown): body is BackendSolveResponse {
 /**
  * Turns POST /solve JSON into a list of frontend game states for replay.
  * New API: { initial_state, events, final_state }. Legacy: GameState[].
+ *
+ * If step-by-step replay throws (coordinate drift vs engine), we still return
+ * a valid sequence [initial, final] so the UI does not show "Solve failed"
+ * when the server already succeeded.
  */
 export function buildSolveReplayStates(body: unknown): GameState[] {
   if (Array.isArray(body)) {
@@ -120,18 +124,30 @@ export function buildSolveReplayStates(body: unknown): GameState[] {
     throw new Error('Invalid solve response: expected { initial_state, events, final_state } or GameState[]');
   }
 
-  const working = cloneDeep(body.initial_state);
-  const out: GameState[] = [...convertBackendToFrontend([working])];
-
-  for (const ev of body.events) {
-    applySolveEvent(working, ev);
-    out.push(convertBackendToFrontend([working])[0]);
-  }
-
+  const initialConverted = convertBackendToFrontend([body.initial_state])[0];
   const finalConverted = convertBackendToFrontend([body.final_state])[0];
-  if (out.length === 0) {
-    return [finalConverted];
+
+  try {
+    const working = cloneDeep(body.initial_state);
+    const out: GameState[] = [...convertBackendToFrontend([working])];
+
+    for (const ev of body.events) {
+      applySolveEvent(working, ev);
+      out.push(convertBackendToFrontend([working])[0]);
+    }
+
+    if (out.length === 0) {
+      return [finalConverted];
+    }
+    out[out.length - 1] = finalConverted;
+    return out;
+  } catch (e) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn('[solveReplay] Event replay failed; using initial + final only.', e);
+    }
+    if (body.events.length === 0) {
+      return [finalConverted];
+    }
+    return [initialConverted, finalConverted];
   }
-  out[out.length - 1] = finalConverted;
-  return out;
 }
