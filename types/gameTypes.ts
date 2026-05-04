@@ -15,7 +15,10 @@ export interface Pile {
 export interface GameState {
   sessionId?: string;
   piles: Pile[];
+  /** Face-down stock cards not yet dealt (synthetic placeholders). */
   stock: Card[];
+  /** From API `stock_count` when wire format omits bulky stock array. */
+  stockCount?: number;
   completedSequences: number;
   completedSequencesBySuit: Record<number, number>; // suit -> count mapping
   moves: number;

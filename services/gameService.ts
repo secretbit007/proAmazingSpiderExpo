@@ -25,16 +25,6 @@ export const gameService = {
     }
   },
 
-  getGameState: async (): Promise<GameState[]> => {
-    try {
-      const backendState = await api.getGameState();
-      return convertBackendToFrontend([backendState]);
-    } catch (error) {
-      // console.error('Error getting game state:', error);
-      throw error;
-    }
-  },
-
   makeMove: async (
     fromRow: number,
     fromCol: number,
