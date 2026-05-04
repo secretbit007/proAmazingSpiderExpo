@@ -49,7 +49,8 @@ export const api = {
     return handleResponse(response);
   },
 
-  solveGame: async (): Promise<GameState[]> => {
+  /** Backend returns SolveResponse: { initial_state, events, final_state }. */
+  solveGame: async (): Promise<unknown> => {
     const response = await fetch(buildUrlWithSession('/solve'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

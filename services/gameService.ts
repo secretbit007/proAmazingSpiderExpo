@@ -1,5 +1,6 @@
 import { GameState } from '../types/gameTypes';
 import { convertBackendToFrontend } from '../utils/gameStateConverter';
+import { buildSolveReplayStates } from '../utils/solveReplay';
 import { sessionStorage } from '../utils/sessionStorage';
 import { api } from './api';
 
@@ -66,8 +67,8 @@ export const gameService = {
 
   solveGame: async (): Promise<GameState[]> => {
     try {
-      const backendState = await api.solveGame();
-      return convertBackendToFrontend(backendState);
+      const raw = await api.solveGame();
+      return buildSolveReplayStates(raw);
     } catch (error) {
       // console.error('Error solving game:', error);
       throw error;
