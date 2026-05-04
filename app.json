@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bit.proAmazingSpider",
+      "bundleIdentifier": "com.Mamre.proAmazingSpider",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UISupportedInterfaceOrientations": [
@@ -33,7 +33,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.bit.proAmazingSpider",
+      "package": "com.Mamre.proAmazingSpider",
       "screenOrientation": "unspecified"
     },
     "web": {
@@ -60,7 +60,7 @@
       "apiBaseUrl": "https://guntawong1.sydney:8443/api/v1",
       "router": {},
       "eas": {
-        "projectId": "89c4eea0-5437-4cae-8554-d3c5dd78fb3a"
+        "projectId": "148a5e4d-0e62-46e3-ac38-5d88610ed4c2"
       }
     }
   }
