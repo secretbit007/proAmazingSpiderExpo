@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { COLORS } from '../constants/Colors';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
-import { COLORS } from '../constants/Colors';
 import { IMAGES, preloadImages } from '../utils/assets';
 import { HelpModal } from './HelpModal';
 import { Pile, PileRef } from './Pile';
@@ -26,7 +26,7 @@ const CONGRATS_SPARKLE_COUNT = 20;
 /** Delay between frames for normal moves (multi-step server animation). */
 const MOVE_REPLAY_DELAY_MS = 90;
 /** Solve can emit many steps; a bit slower makes each step visible (80ms often looks like a single jump). */
-const SOLVE_REPLAY_DELAY_MS = 140;
+const SOLVE_REPLAY_DELAY_MS = 80;
 
 function actionErrorMessage(err: unknown, fallback: string): string {
     if (err instanceof Error && err.message.trim()) {

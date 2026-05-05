@@ -21,6 +21,8 @@ export type BackendSolveResponse = {
   initial_state: Record<string, unknown>;
   events: BackendSolveEvent[];
   final_state: Record<string, unknown>;
+  /** When present from API, use for animation (authoritative; avoids client event replay drift). */
+  state_sequence?: Record<string, unknown>[];
 };
 
 function cloneDeep<T>(x: T): T {
@@ -122,6 +124,11 @@ export function buildSolveReplayStates(body: unknown): GameState[] {
   }
   if (!isSolveResponse(body)) {
     throw new Error('Invalid solve response: expected { initial_state, events, final_state } or GameState[]');
+  }
+
+  const seq = body.state_sequence;
+  if (Array.isArray(seq) && seq.length > 0) {
+    return convertBackendToFrontend(seq);
   }
 
   const initialConverted = convertBackendToFrontend([body.initial_state])[0];
