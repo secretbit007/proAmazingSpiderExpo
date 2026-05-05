@@ -23,7 +23,10 @@ const SUIT_COLOR_MAP: Record<string, string> = {
 const MAX_COMPLETED = 8;
 const ICON_SPARKLE_COUNT = 6;
 const CONGRATS_SPARKLE_COUNT = 20;
-const REPLAY_DELAY_MS = 80;
+/** Delay between frames for normal moves (multi-step server animation). */
+const MOVE_REPLAY_DELAY_MS = 90;
+/** Solve can emit many steps; a bit slower makes each step visible (80ms often looks like a single jump). */
+const SOLVE_REPLAY_DELAY_MS = 140;
 
 function actionErrorMessage(err: unknown, fallback: string): string {
     if (err instanceof Error && err.message.trim()) {
@@ -161,7 +164,8 @@ export const GameBoard: React.FC = () => {
     const playStateSequence = async (
         states: GameState[],
         runId: number,
-        runRef: React.MutableRefObject<number>
+        runRef: React.MutableRefObject<number>,
+        delayMs: number = MOVE_REPLAY_DELAY_MS
     ): Promise<boolean> => {
         if (!states || states.length === 0) return false;
         if (!isRunActive(runId, runRef)) return false;
@@ -174,7 +178,7 @@ export const GameBoard: React.FC = () => {
         for (let i = 0; i < states.length; i++) {
             if (!isRunActive(runId, runRef)) return false;
             setGameState(states[i]);
-            await new Promise(resolve => setTimeout(resolve, REPLAY_DELAY_MS));
+            await new Promise(resolve => setTimeout(resolve, delayMs));
         }
 
         return true;
@@ -571,7 +575,7 @@ export const GameBoard: React.FC = () => {
 
         try {
             const newStates = await gameService.solveGame();
-            await playStateSequence(newStates, runId, solveRunIdRef);
+            await playStateSequence(newStates, runId, solveRunIdRef, SOLVE_REPLAY_DELAY_MS);
         } catch (err) {
             if (isRunActive(runId, solveRunIdRef)) {
                 setActionError(actionErrorMessage(err, 'Solve failed. Please try again.'));
