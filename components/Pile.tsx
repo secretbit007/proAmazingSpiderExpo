@@ -415,6 +415,18 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
 
   const interactiveStartIndex = getInteractiveStartIndex();
 
+  if (cards.length === 0) {
+    return (
+      <TouchableWithoutFeedback onPress={() => onTouchEvent?.(pileIndex)}>
+        <View style={styles.pileContainer} onLayout={onLayout}>
+          <View style={styles.emptySlot}>
+            <View style={styles.emptySlotInner} />
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
+    );
+  }
+
   return (
     <TouchableWithoutFeedback onPress={() => onTouchEvent?.(pileIndex)}>
       <View style={styles.pileContainer} onLayout={onLayout}>
@@ -472,13 +484,31 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginHorizontal: 1,
   },
+  emptySlot: {
+    width: '100%',
+    aspectRatio: 80 / 120,
+    maxHeight: 120,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: COLORS.emptySlotBorder,
+    borderStyle: 'dashed',
+    backgroundColor: COLORS.emptySlot,
+    padding: 3,
+  },
+  emptySlotInner: {
+    flex: 1,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 162, 39, 0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.12)',
+  },
   cardWrapper: {
     left: 0,
   },
   hoveredCard: {
-    borderColor: COLORS.selectionBlue,
-    borderWidth: 2,
-    borderRadius: 6,
+    borderColor: COLORS.brassLight,
+    borderWidth: 2.5,
+    borderRadius: 7,
   },
   nonInteractiveCard: {
     opacity: 0.88,

@@ -28,8 +28,9 @@ export const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
   return (
     <View style={styles.modalOverlay}>
       <View style={styles.modalContainer}>
+        <View style={styles.modalInner}>
         <Text style={styles.modalTitle}>How to Play AmazingSpider</Text>
-        <Text style={styles.modalSubtitle}>Rules and strategy tips</Text>
+        <Text style={styles.modalSubtitle}>Rules & strategy</Text>
 
         <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
           {HELP_PARAGRAPHS.map((paragraph, index) => (
@@ -39,9 +40,10 @@ export const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
           ))}
         </ScrollView>
 
-        <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.7}>
-          <Text style={styles.closeButtonText}>Close</Text>
+        <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.85}>
+          <Text style={styles.closeButtonText}>Got it!</Text>
         </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -63,30 +65,42 @@ const styles = StyleSheet.create({
     width: Platform.OS === 'web' ? '55%' : '90%',
     maxWidth: 560,
     maxHeight: '80%',
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: COLORS.woodDark,
+    borderRadius: 16,
+    padding: 4,
+    borderWidth: 3,
+    borderColor: COLORS.woodLight,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.6,
     shadowRadius: 24,
     elevation: 20,
   },
   modalTitle: {
-    color: COLORS.textPrimary,
+    color: COLORS.textGold,
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '900',
     textAlign: 'center',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    textShadowColor: COLORS.goldGlow,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
   modalSubtitle: {
-    color: COLORS.textMuted,
-    fontSize: 14,
+    color: COLORS.brassLight,
+    fontSize: 13,
     textAlign: 'center',
     marginTop: 4,
     marginBottom: 14,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  modalInner: {
+    backgroundColor: COLORS.hudBg,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.brass,
+    padding: 18,
   },
   scrollArea: {
     flexGrow: 0,
@@ -103,14 +117,20 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     marginTop: 10,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 13,
+    borderRadius: 10,
     alignItems: 'center',
-    backgroundColor: COLORS.buttonPrimary,
+    backgroundColor: COLORS.buttonDeal,
+    borderWidth: 2,
+    borderColor: COLORS.brass,
+    borderBottomWidth: 4,
+    borderBottomColor: COLORS.buttonDealDark,
   },
   closeButtonText: {
     color: COLORS.buttonText,
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 15,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 });

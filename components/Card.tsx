@@ -50,6 +50,8 @@ export const CardComponent: React.FC<CardProps> = ({
       {card.isFaceUp ? (
         <View style={styles.faceUpCard}>
           <View style={styles.cardWhiteBackground} />
+          <View style={styles.cardGlossStrip} />
+          <View style={styles.cardInnerFrame} />
 
           {/* Top-left corner - Rank */}
           <View style={[styles.topLeftCorner, { top: cornerRankVertical, left: cornerRankSuitHorizontal }]}>
@@ -124,15 +126,15 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     overflow: 'hidden',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.15)',
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: COLORS.cardBorder,
     aspectRatio: 80 / 120,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 3,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.38,
+    shadowRadius: 5,
+    elevation: 6,
   },
   faceUpCard: {
     flex: 1,
@@ -149,6 +151,26 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: COLORS.cardFace,
+  },
+  cardGlossStrip: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '28%',
+    backgroundColor: COLORS.cardGloss,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+  },
+  cardInnerFrame: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    right: 3,
+    bottom: 3,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
   },
   topLeftCorner: {
     position: 'absolute',
@@ -207,14 +229,14 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   hoveredCard: {
-    transform: [{ translateY: -4 }],
-    borderColor: COLORS.selectionBlue,
-    borderWidth: 2,
+    transform: [{ translateY: -6 }, { scale: 1.03 }],
+    borderColor: COLORS.brassLight,
+    borderWidth: 2.5,
     shadowColor: COLORS.selectionBlue,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 16,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.65,
+    shadowRadius: 12,
+    elevation: 20,
     zIndex: 100,
   },
   nonInteractiveCard: {

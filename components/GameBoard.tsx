@@ -4,8 +4,11 @@ import { COLORS } from '../constants/Colors';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
 import { IMAGES, preloadImages } from '../utils/assets';
+import { GameButton, GameButtonVariant } from './GameButton';
 import { HelpModal } from './HelpModal';
+import { HudStat } from './HudStat';
 import { Pile, PileRef } from './Pile';
+import { StockPile } from './StockPile';
 
 const SPARKLE_COUNT = 8;
 const SUIT_IMAGE_MAP: Record<string, any> = {
@@ -643,8 +646,8 @@ export const GameBoard: React.FC = () => {
     if (loading) {
         return (
             <View style={[styles.container, styles.center, styles.loadingScreen]}>
-                <ActivityIndicator size="large" color={COLORS.selectionBlue} />
-                <Text style={styles.loadingText}>Loading game...</Text>
+                <ActivityIndicator size="large" color={COLORS.brassLight} />
+                <Text style={styles.loadingText}>Shuffling the deck...</Text>
             </View>
         );
     }
@@ -688,54 +691,62 @@ export const GameBoard: React.FC = () => {
                 style={styles.backgroundImage}
                 resizeMode="cover"
             >
+                <View style={styles.vignetteOverlay} pointerEvents="none" />
+                <View style={styles.feltTint} pointerEvents="none" />
+
                 <View style={styles.logoContainer}>
                     <Image
                         source={IMAGES.background_logo}
                         style={styles.logoImage}
-                        resizeMode="center"
+                        resizeMode="contain"
                     />
                 </View>
-                
-                <View style={styles.header}>
-                    <View style={styles.statChip}>
-                        <Text style={styles.statLabel}>MOVES</Text>
-                        <Text style={styles.statValue}>{gameState.moves}</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statChip}>
-                        <Text style={styles.statLabel}>STACK</Text>
-                        <Text style={styles.statValue}>{gameState.drawsRemaining}<Text style={styles.statTotal}>/5</Text></Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statChip}>
-                        <Text style={styles.statLabel}>DONE</Text>
-                        <Text style={styles.statValue}>{gameState.completedSequences}<Text style={styles.statTotal}>/8</Text></Text>
+
+                <View style={styles.hudFrame}>
+                    <View style={styles.hudInner}>
+                        <HudStat label="MOVES" value={gameState.moves} accent />
+                        <View style={styles.hudDivider} />
+                        <View style={styles.hudStock}>
+                            <Text style={styles.hudStockLabel}>STOCK</Text>
+                            <StockPile drawsRemaining={gameState.drawsRemaining} />
+                        </View>
+                        <View style={styles.hudDivider} />
+                        <HudStat
+                            label="COMPLETE"
+                            value={gameState.completedSequences}
+                            suffix="/8"
+                            accent={gameState.completedSequences > 0}
+                        />
                     </View>
                 </View>
 
-                <View style={styles.container}>
-                    <View style={styles.pilesContainer}>
-                        {gameState.piles.map((pile, pileIndex) => (
-                            <Pile
-                                key={pileIndex}
-                                ref={(ref) => {
-                                    pileRefs.current[pileIndex] = ref;
-                                }}
-                                cards={pile.cards}
-                                pileIndex={pileIndex}
-                                hoveredCard={hoveredCard}
-                                onCardPress={handleCardPress}
-                                onCardHover={handleCardHover}
-                                onExpansionChange={handlePileExpansionChange}
-                                onTouchEvent={handleTouchEvent}
-                            />
-                        ))}
+                <View style={styles.tableFrame}>
+                    <View style={styles.tableInner}>
+                        <View style={styles.pilesContainer}>
+                            {gameState.piles.map((pile, pileIndex) => (
+                                <Pile
+                                    key={pileIndex}
+                                    ref={(ref) => {
+                                        pileRefs.current[pileIndex] = ref;
+                                    }}
+                                    cards={pile.cards}
+                                    pileIndex={pileIndex}
+                                    hoveredCard={hoveredCard}
+                                    onCardPress={handleCardPress}
+                                    onCardHover={handleCardHover}
+                                    onExpansionChange={handlePileExpansionChange}
+                                    onTouchEvent={handleTouchEvent}
+                                />
+                            ))}
+                        </View>
                     </View>
                 </View>
 
                 {/* Completed suit icons above button bar */}
                 {completedIcons.length > 0 && (
-                    <View style={styles.completedIconsRow}>
+                    <View style={styles.completedTray}>
+                        <Text style={styles.completedTrayLabel}>REMOVED</Text>
+                        <View style={styles.completedIconsRow}>
                         {completedIcons.map(function (suit: string, index: number) {
                             return (
                                 <Animated.View key={index} style={[
@@ -792,17 +803,19 @@ export const GameBoard: React.FC = () => {
                                 </Animated.View>
                             );
                         })}
+                        </View>
                     </View>
                 )}
 
-                <View style={styles.buttonBar}>
+                <View style={styles.actionBarFrame}>
+                    <View style={styles.buttonBar}>
                     {([
-                        { key: 'new', emoji: '+', label: 'New', color: styles.buttonNew, onPress: handleNewGame, disabled: loading },
-                        { key: 'deal', emoji: '\u25A6', label: 'Deal', color: styles.buttonStack, onPress: handleDealCards, disabled: isSolving || isMovingCard },
-                        { key: 'solve', emoji: '\u2728', label: isSolving ? 'Solving' : 'Solve', color: styles.buttonSolve, onPress: handleSolve, disabled: isSolving },
-                        { key: 'undo', emoji: '\u21B6', label: 'Undo', color: styles.buttonUndo, onPress: handleUndo, disabled: isSolving || isMovingCard },
-                        { key: 'help', emoji: '?', label: 'Help', color: styles.buttonHelp, onPress: handleHelp, disabled: false },
-                    ] as const).map((btn) => (
+                        { key: 'new' as const, variant: 'new' as GameButtonVariant, icon: '♠', label: 'New', onPress: handleNewGame, disabled: loading },
+                        { key: 'deal', variant: 'deal' as GameButtonVariant, icon: '▦', label: 'Deal', onPress: handleDealCards, disabled: isSolving || isMovingCard },
+                        { key: 'solve', variant: 'solve' as GameButtonVariant, icon: '✦', label: isSolving ? 'Solving' : 'Solve', onPress: handleSolve, disabled: isSolving },
+                        { key: 'undo', variant: 'undo' as GameButtonVariant, icon: '↶', label: 'Undo', onPress: handleUndo, disabled: isSolving || isMovingCard },
+                        { key: 'help', variant: 'help' as GameButtonVariant, icon: '?', label: 'Help', onPress: handleHelp, disabled: false },
+                    ]).map((btn) => (
                         <View key={btn.key} style={styles.buttonWrapper}>
                             {activeTooltip === btn.key && (
                                 <Animated.View style={[styles.tooltipContainer, { opacity: tooltipOpacity }]} pointerEvents="none">
@@ -812,19 +825,18 @@ export const GameBoard: React.FC = () => {
                                     <View style={styles.tooltipArrow} />
                                 </Animated.View>
                             )}
-                            <TouchableOpacity
-                                style={[styles.button, btn.color, btn.disabled ? styles.buttonDisabled : null]}
+                            <GameButton
+                                variant={btn.variant}
+                                label={btn.label}
+                                icon={btn.icon}
                                 onPress={btn.onPress}
                                 onPressIn={() => showTooltip(btn.key)}
                                 onPressOut={hideTooltip}
-                                activeOpacity={0.7}
                                 disabled={btn.disabled}
-                            >
-                                <Text style={styles.buttonEmoji}>{btn.emoji}</Text>
-                                <Text style={styles.buttonText}>{btn.label}</Text>
-                            </TouchableOpacity>
+                            />
                         </View>
                     ))}
+                    </View>
                 </View>
                 {actionError && (
                     <View style={styles.inlineErrorContainer}>
@@ -977,6 +989,14 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
     },
+    vignetteOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: COLORS.vignette,
+    },
+    feltTint: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(26, 92, 52, 0.22)',
+    },
     container: {
         flex: 1,
     },
@@ -988,62 +1008,91 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.background,
     },
 
-    // ── Header ──────────────────────────────────────
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        backgroundColor: COLORS.glass,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.glassBorder,
+    // ── HUD (game scoreboard) ───────────────────────
+    hudFrame: {
+        marginHorizontal: 10,
+        marginTop: 6,
+        marginBottom: 4,
+        borderRadius: 14,
+        borderWidth: 3,
+        borderColor: COLORS.woodLight,
+        backgroundColor: COLORS.woodDark,
+        padding: 3,
         zIndex: 3000,
-        elevation: 10,
-        gap: 0,
+        elevation: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.5,
+        shadowRadius: 8,
     },
-    statChip: {
+    hudInner: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
         alignItems: 'center',
-        paddingHorizontal: 14,
+        backgroundColor: COLORS.hudBg,
+        borderRadius: 11,
+        borderWidth: 1,
+        borderColor: COLORS.brass,
+        paddingVertical: 6,
+        paddingHorizontal: 8,
     },
-    statLabel: {
-        color: COLORS.textMuted,
+    hudDivider: {
+        width: 2,
+        height: 36,
+        backgroundColor: COLORS.woodMid,
+        borderRadius: 1,
+    },
+    hudStock: {
+        alignItems: 'center',
+        paddingHorizontal: 8,
+    },
+    hudStockLabel: {
+        color: COLORS.brassLight,
         fontSize: 9,
-        fontWeight: '700',
-        letterSpacing: 1.2,
-        marginBottom: 1,
-    },
-    statValue: {
-        color: COLORS.textPrimary,
-        fontSize: 16,
         fontWeight: '800',
-    },
-    statTotal: {
-        color: COLORS.textMuted,
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    statDivider: {
-        width: 1,
-        height: 24,
-        backgroundColor: 'rgba(255, 255, 255, 0.12)',
+        letterSpacing: 1.4,
+        marginBottom: 2,
     },
 
-    // ── Piles ───────────────────────────────────────
+    // ── Table play area ─────────────────────────────
+    tableFrame: {
+        flex: 1,
+        marginHorizontal: 8,
+        marginVertical: 4,
+        borderRadius: 16,
+        borderWidth: 4,
+        borderColor: COLORS.woodMid,
+        backgroundColor: COLORS.woodDark,
+        padding: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.45,
+        shadowRadius: 10,
+        elevation: 8,
+    },
+    tableInner: {
+        flex: 1,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: COLORS.feltLight,
+        backgroundColor: COLORS.feltGreen,
+        paddingHorizontal: 4,
+        paddingVertical: 6,
+        overflow: 'hidden',
+    },
     pilesContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         flex: 1,
-        marginHorizontal: 5,
-        marginTop: 5,
     },
 
     // ── Loading / Error ─────────────────────────────
     loadingText: {
-        color: COLORS.textSecondary,
+        color: COLORS.textGold,
         marginTop: 12,
-        fontSize: 15,
-        fontWeight: '500',
+        fontSize: 16,
+        fontWeight: '700',
+        letterSpacing: 0.5,
     },
     errorText: {
         color: COLORS.textPrimary,
@@ -1052,85 +1101,52 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     retryButton: {
-        backgroundColor: COLORS.buttonPrimary,
-        paddingHorizontal: 24,
-        paddingVertical: 12,
-        borderRadius: 20,
+        backgroundColor: COLORS.buttonDeal,
+        paddingHorizontal: 28,
+        paddingVertical: 14,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: COLORS.brass,
     },
     retryButtonText: {
         color: COLORS.buttonText,
-        fontWeight: '700',
+        fontWeight: '800',
         fontSize: 15,
+        letterSpacing: 0.5,
     },
     inlineErrorContainer: {
-        backgroundColor: 'rgba(255, 59, 48, 0.18)',
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(255, 59, 48, 0.5)',
+        backgroundColor: 'rgba(180, 40, 30, 0.35)',
+        borderTopWidth: 2,
+        borderTopColor: 'rgba(220, 80, 60, 0.6)',
         paddingVertical: 6,
         paddingHorizontal: 10,
     },
     inlineErrorText: {
-        color: '#FF8A80',
+        color: '#ffb4a8',
         fontSize: 12,
-        fontWeight: '600',
+        fontWeight: '700',
         textAlign: 'center',
     },
 
-    // ── Button Bar ──────────────────────────────────
+    // ── Action bar ──────────────────────────────────
+    actionBarFrame: {
+        marginHorizontal: 10,
+        marginBottom: 6,
+        borderRadius: 14,
+        borderWidth: 3,
+        borderColor: COLORS.woodLight,
+        backgroundColor: COLORS.woodDark,
+        padding: 4,
+        zIndex: 3000,
+        elevation: 12,
+    },
     buttonBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 6,
-        paddingVertical: 8,
-        backgroundColor: COLORS.glass,
-        borderTopWidth: 1,
-        borderTopColor: COLORS.glassBorder,
-        zIndex: 3000,
-        elevation: 10,
-        gap: 5,
+        alignItems: 'stretch',
+        gap: 6,
         overflow: 'visible',
     },
-    button: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 6,
-        paddingHorizontal: 4,
-        borderRadius: 10,
-        minHeight: 44,
-    },
-    buttonDisabled: {
-        opacity: 0.6,
-    },
-    buttonNew: {
-        backgroundColor: COLORS.buttonSuccess,
-    },
-    buttonStack: {
-        backgroundColor: COLORS.buttonPrimary,
-    },
-    buttonSolve: {
-        backgroundColor: '#8B5CF6',
-    },
-    buttonUndo: {
-        backgroundColor: COLORS.buttonMuted,
-    },
-    buttonHelp: {
-        backgroundColor: '#D97706',
-    },
-    buttonEmoji: {
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.9)',
-        marginBottom: 1,
-    },
-    buttonText: {
-        color: COLORS.buttonText,
-        fontWeight: '700',
-        fontSize: 11,
-        letterSpacing: 0.3,
-    },
-
-    // ── Button Wrapper + Tooltip ──────────────────────
     buttonWrapper: {
         flex: 1,
         position: 'relative',
@@ -1141,20 +1157,20 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         alignItems: 'center',
-        marginBottom: 4,
+        marginBottom: 6,
         zIndex: 9999,
         elevation: 50,
     },
     tooltipBubble: {
-        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        backgroundColor: COLORS.hudBg,
         borderRadius: 8,
         paddingHorizontal: 10,
         paddingVertical: 6,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1.5,
+        borderColor: COLORS.brass,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.4,
+        shadowOpacity: 0.5,
         shadowRadius: 8,
         elevation: 8,
         minWidth: 100,
@@ -1162,33 +1178,33 @@ const styles = StyleSheet.create({
     tooltipText: {
         color: COLORS.textSecondary,
         fontSize: 11,
-        fontWeight: '500',
+        fontWeight: '600',
         textAlign: 'center',
     },
     tooltipArrow: {
         width: 8,
         height: 8,
-        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-        borderRightWidth: 1,
-        borderBottomWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        backgroundColor: COLORS.hudBg,
+        borderRightWidth: 1.5,
+        borderBottomWidth: 1.5,
+        borderColor: COLORS.brass,
         transform: [{ rotate: '45deg' }],
         marginTop: -5,
     },
 
-    // ── Logo ────────────────────────────────────────
+    // ── Logo watermark ──────────────────────────────
     logoContainer: {
         position: 'absolute',
-        top: '50%',
+        top: '42%',
         left: 0,
         right: 0,
         justifyContent: 'center',
         alignItems: 'center',
+        opacity: 0.35,
     },
     logoImage: {
-        height: '50%',
-        opacity: 0.7,
-        aspectRatio: 10,
+        width: '70%',
+        height: 80,
     },
 
     // ── Completion Animation ────────────────────────
@@ -1236,15 +1252,31 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
     },
 
-    // ── Completed Icons Row ─────────────────────────
+    // ── Completed suits tray ────────────────────────
+    completedTray: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 5,
+        paddingHorizontal: 12,
+        marginHorizontal: 10,
+        marginBottom: 4,
+        backgroundColor: COLORS.hudBg,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: COLORS.brass,
+        gap: 10,
+    },
+    completedTrayLabel: {
+        color: COLORS.brassLight,
+        fontSize: 9,
+        fontWeight: '800',
+        letterSpacing: 1.2,
+    },
     completedIconsRow: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 6,
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
-        borderTopWidth: 1,
-        borderTopColor: COLORS.glassBorder,
     },
     completedIconWrapper: {
         width: 32,
@@ -1285,13 +1317,14 @@ const styles = StyleSheet.create({
     },
     congratsTitle: {
         color: COLORS.gold,
-        fontSize: 36,
-        fontWeight: 'bold',
+        fontSize: 38,
+        fontWeight: '900',
         textAlign: 'center',
         textShadowColor: COLORS.goldGlow,
         textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 20,
+        textShadowRadius: 24,
         marginBottom: 12,
+        letterSpacing: 1,
     },
     congratsMoves: {
         color: COLORS.textSecondary,
