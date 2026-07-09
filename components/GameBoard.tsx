@@ -808,13 +808,15 @@ export const GameBoard: React.FC = () => {
                 )}
 
                 <View style={styles.actionBarFrame}>
-                    <View style={styles.buttonBar}>
+                    <View style={styles.actionBarInner}>
+                        <Text style={styles.actionBarTitle}>CONTROLS</Text>
+                        <View style={styles.buttonBar}>
                     {([
-                        { key: 'new' as const, variant: 'new' as GameButtonVariant, icon: '♠', label: 'New', onPress: handleNewGame, disabled: loading },
-                        { key: 'deal', variant: 'deal' as GameButtonVariant, icon: '▦', label: 'Deal', onPress: handleDealCards, disabled: isSolving || isMovingCard },
-                        { key: 'solve', variant: 'solve' as GameButtonVariant, icon: '✦', label: isSolving ? 'Solving' : 'Solve', onPress: handleSolve, disabled: isSolving },
-                        { key: 'undo', variant: 'undo' as GameButtonVariant, icon: '↶', label: 'Undo', onPress: handleUndo, disabled: isSolving || isMovingCard },
-                        { key: 'help', variant: 'help' as GameButtonVariant, icon: '?', label: 'Help', onPress: handleHelp, disabled: false },
+                        { key: 'new' as const, variant: 'new' as GameButtonVariant, icon: '＋', label: 'New', onPress: handleNewGame, disabled: loading },
+                        { key: 'deal', variant: 'deal' as GameButtonVariant, icon: '▤', label: 'Deal', onPress: handleDealCards, disabled: isSolving || isMovingCard },
+                        { key: 'solve', variant: 'solve' as GameButtonVariant, icon: '★', label: isSolving ? 'Busy' : 'Solve', onPress: handleSolve, disabled: isSolving },
+                        { key: 'undo', variant: 'undo' as GameButtonVariant, icon: '↩', label: 'Undo', onPress: handleUndo, disabled: isSolving || isMovingCard },
+                        { key: 'help', variant: 'help' as GameButtonVariant, icon: 'i', label: 'Help', onPress: handleHelp, disabled: false },
                     ]).map((btn) => (
                         <View key={btn.key} style={styles.buttonWrapper}>
                             {activeTooltip === btn.key && (
@@ -836,6 +838,7 @@ export const GameBoard: React.FC = () => {
                             />
                         </View>
                     ))}
+                        </View>
                     </View>
                 </View>
                 {actionError && (
@@ -1131,20 +1134,44 @@ const styles = StyleSheet.create({
     // ── Action bar ──────────────────────────────────
     actionBarFrame: {
         marginHorizontal: 10,
-        marginBottom: 6,
-        borderRadius: 14,
+        marginBottom: 8,
+        borderRadius: 16,
         borderWidth: 3,
         borderColor: COLORS.woodLight,
         backgroundColor: COLORS.woodDark,
-        padding: 4,
+        padding: 3,
         zIndex: 3000,
-        elevation: 12,
+        elevation: 14,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.4,
+        shadowRadius: 6,
+    },
+    actionBarInner: {
+        backgroundColor: COLORS.hudBg,
+        borderRadius: 13,
+        borderWidth: 2,
+        borderColor: COLORS.brass,
+        paddingTop: 6,
+        paddingBottom: 8,
+        paddingHorizontal: 6,
+    },
+    actionBarTitle: {
+        color: COLORS.brassLight,
+        fontSize: 9,
+        fontWeight: '800',
+        letterSpacing: 2,
+        textAlign: 'center',
+        marginBottom: 6,
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
     },
     buttonBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'stretch',
-        gap: 6,
+        alignItems: 'flex-end',
+        gap: 4,
         overflow: 'visible',
     },
     buttonWrapper: {
