@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, useWindowDimensions, View } from 'react-native';
+import { computeCardLayout, PILE_GAP } from '../constants/CardLayout';
 import { COLORS } from '../constants/Colors';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
@@ -66,6 +67,8 @@ export const GameBoard: React.FC = () => {
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
     const tooltipOpacity = useRef(new Animated.Value(0)).current;
     const tooltipHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const { width: screenWidth } = useWindowDimensions();
+    const cardLayout = useMemo(() => computeCardLayout(screenWidth), [screenWidth]);
 
     // Completion animation state
     const [animatingSuit, setAnimatingSuit] = useState<string | null>(null);
@@ -722,7 +725,27 @@ export const GameBoard: React.FC = () => {
 
                 <View style={styles.tableFrame}>
                     <View style={styles.tableInner}>
-                        <View style={styles.pilesContainer}>
+                        <ScrollView
+                            horizontal={cardLayout.needsScroll}
+                            scrollEnabled={cardLayout.needsScroll}
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.pilesScroll}
+                            contentContainerStyle={[
+                                styles.pilesScrollContent,
+                                cardLayout.needsScroll
+                                    ? { width: cardLayout.tableauWidth }
+                                    : { flexGrow: 1, justifyContent: 'center' },
+                            ]}
+                        >
+                            <View
+                                style={[
+                                    styles.pilesContainer,
+                                    {
+                                        width: cardLayout.needsScroll ? cardLayout.tableauWidth : undefined,
+                                        gap: PILE_GAP,
+                                    },
+                                ]}
+                            >
                             {gameState.piles.map((pile, pileIndex) => (
                                 <Pile
                                     key={pileIndex}
@@ -731,6 +754,7 @@ export const GameBoard: React.FC = () => {
                                     }}
                                     cards={pile.cards}
                                     pileIndex={pileIndex}
+                                    cardWidth={cardLayout.cardWidth}
                                     hoveredCard={hoveredCard}
                                     onCardPress={handleCardPress}
                                     onCardHover={handleCardHover}
@@ -738,7 +762,8 @@ export const GameBoard: React.FC = () => {
                                     onTouchEvent={handleTouchEvent}
                                 />
                             ))}
-                        </View>
+                            </View>
+                        </ScrollView>
                     </View>
                 </View>
 
@@ -1060,13 +1085,13 @@ const styles = StyleSheet.create({
     // ── Table play area ─────────────────────────────
     tableFrame: {
         flex: 1,
-        marginHorizontal: 8,
-        marginVertical: 4,
+        marginHorizontal: 4,
+        marginVertical: 3,
         borderRadius: 16,
         borderWidth: 4,
         borderColor: COLORS.woodMid,
         backgroundColor: COLORS.woodDark,
-        padding: 4,
+        padding: 3,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.45,
@@ -1079,14 +1104,21 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: COLORS.feltLight,
         backgroundColor: COLORS.feltGreen,
-        paddingHorizontal: 4,
-        paddingVertical: 6,
+        paddingHorizontal: 3,
+        paddingVertical: 5,
         overflow: 'hidden',
+    },
+    pilesScroll: {
+        flex: 1,
+    },
+    pilesScrollContent: {
+        alignItems: 'stretch',
+        minHeight: '100%',
     },
     pilesContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        flex: 1,
+        alignItems: 'flex-start',
+        minHeight: '100%',
     },
 
     // ── Loading / Error ─────────────────────────────

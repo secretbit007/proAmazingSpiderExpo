@@ -1,7 +1,8 @@
 import React from 'react';
 import { Image, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
-import { Card } from '../types/gameTypes';
+import { CARD_ASPECT_RATIO } from '../constants/CardLayout';
 import { COLORS } from '../constants/Colors';
+import { Card } from '../types/gameTypes';
 import { IMAGES } from '../utils/assets';
 
 interface CardProps {
@@ -122,14 +123,13 @@ export const CardComponent: React.FC<CardProps> = ({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    maxHeight: 120,
     width: '100%',
     height: '100%',
     overflow: 'hidden',
     borderRadius: 7,
     borderWidth: 1.5,
     borderColor: COLORS.cardBorder,
-    aspectRatio: 80 / 120,
+    aspectRatio: CARD_ASPECT_RATIO,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.38,
