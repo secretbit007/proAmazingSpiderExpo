@@ -736,8 +736,11 @@ export const GameBoard: React.FC = () => {
                     >
                         <View style={styles.pilesContainer}>
                             {gameState.piles.map((pile, pileIndex) => (
-                                <Pile
+                                <View
                                     key={pileIndex}
+                                    style={[styles.pileSlot, { width: cardLayout.cardWidth }]}
+                                >
+                                <Pile
                                     ref={(ref) => {
                                         pileRefs.current[pileIndex] = ref;
                                     }}
@@ -750,6 +753,7 @@ export const GameBoard: React.FC = () => {
                                     onExpansionChange={handlePileExpansionChange}
                                     onTouchEvent={handleTouchEvent}
                                 />
+                                </View>
                             ))}
                         </View>
                     </View>
@@ -1099,8 +1103,13 @@ const styles = StyleSheet.create({
     pilesContainer: {
         flex: 1,
         flexDirection: 'row',
-        direction: 'ltr',
-        alignItems: 'flex-start',
+        alignItems: 'stretch',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    pileSlot: {
+        flexShrink: 0,
+        height: '100%',
     },
 
     // ── Loading / Error ─────────────────────────────

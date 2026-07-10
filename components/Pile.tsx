@@ -80,12 +80,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
     }
 
     // Compute threshold condition at click time
-    const cardHeight = cardHeightForWidth(dimensions.width);
-    const gapByWidth = dimensions.width * 0.5;
-    const cardCount = cards.length;
-    const gapByHeight = (dimensions.height - cardHeight * 2) / cardCount;
-    const baseGapSize = Math.min(gapByWidth, gapByHeight);
-    const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
+    const { requiresExpansion } = getGapMetrics();
 
     const isExpandedOnThisCard = expandedPile === pileIndex && expandedCardIndex === cardIndex;
 
@@ -239,13 +234,21 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
     setDimensions({ width, height });
   };
 
-  const calculateGapSize = (cardIndex: number) => {
-    const cardHeight = cardHeightForWidth(dimensions.width);
-    const gapByWidth = dimensions.width * 0.5;
+  const getGapMetrics = () => {
+    const pileWidth = dimensions.width > 0 ? dimensions.width : cardWidth;
+    const cardHeight = cardHeightForWidth(pileWidth);
+    const gapByWidth = pileWidth * 0.5;
     const cardCount = cards.length;
-    const gapByHeight = (dimensions.height - cardHeight * 2) / cardCount;
+    const containerHeight = Math.max(dimensions.height, cardHeight);
+    const gapByHeight =
+      cardCount > 1 ? (containerHeight - cardHeight * 2) / cardCount : gapByWidth;
+    const baseGapSize = Math.max(1, Math.min(gapByWidth, gapByHeight));
+    const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
+    return { cardHeight, gapByWidth, baseGapSize, requiresExpansion };
+  };
 
-    const baseGapSize = Math.min(gapByWidth, gapByHeight);
+  const calculateGapSize = (cardIndex: number) => {
+    const { gapByWidth, baseGapSize } = getGapMetrics();
     
     // If this pile is expanded, calculate the 7-card expansion range for face-up cards only
     if (expandedPile === pileIndex && expandedCardIndex !== null && baseGapSize <= gapByWidth * 0.85) {
@@ -332,12 +335,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
   const isCardInExpandedRange = (cardIndex: number) => {
     // Check if this pile is expanded and if the card is in the expanded range
     if (expandedPile === pileIndex && expandedCardIndex !== null) {
-      const cardHeight = cardHeightForWidth(dimensions.width);
-      const gapByWidth = dimensions.width * 0.5;
-      const cardCount = cards.length;
-      const gapByHeight = (dimensions.height - cardHeight * 2) / cardCount;
-      const baseGapSize = Math.min(gapByWidth, gapByHeight);
-      const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
+      const { requiresExpansion } = getGapMetrics();
       
       if (requiresExpansion) {
         // Get face-up cards range for expansion calculations
@@ -376,12 +374,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
   const getCardZIndex = (cardIndex: number) => {
     // If this pile is expanded, give expanded cards higher z-index
     if (expandedPile === pileIndex && expandedCardIndex !== null) {
-      const cardHeight = cardHeightForWidth(dimensions.width);
-      const gapByWidth = dimensions.width * 0.5;
-      const cardCount = cards.length;
-      const gapByHeight = (dimensions.height - cardHeight * 2) / cardCount;
-      const baseGapSize = Math.min(gapByWidth, gapByHeight);
-      const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
+      const { requiresExpansion } = getGapMetrics();
       
       if (requiresExpansion) {
         // Get face-up cards range for expansion calculations
@@ -494,7 +487,9 @@ const styles = StyleSheet.create({
   pileContainer: {
     position: 'relative',
     flex: 1,
-    maxWidth: undefined,
+    width: '100%',
+    height: '100%',
+    alignSelf: 'stretch',
   },
   emptySlot: {
     width: '100%',
