@@ -427,7 +427,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
   if (cards.length === 0) {
     return (
       <TouchableWithoutFeedback onPress={() => onTouchEvent?.(pileIndex)}>
-        <View style={[styles.pileContainer, { width: cardWidth }]} onLayout={onLayout}>
+        <View style={styles.pileContainer} onLayout={onLayout}>
           <View style={[styles.emptySlot, { aspectRatio: CARD_ASPECT_RATIO }]}>
             <View style={styles.emptySlotInner} />
           </View>
@@ -438,7 +438,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
 
   return (
     <TouchableWithoutFeedback onPress={() => onTouchEvent?.(pileIndex)}>
-      <View style={[styles.pileContainer, { width: cardWidth }]} onLayout={onLayout}>
+      <View style={styles.pileContainer} onLayout={onLayout}>
         {cards.map((card, cardIndex) => {
         const isInteractive = cardIndex >= interactiveStartIndex;
         const isHovered = hoveredCard?.pileIndex === pileIndex && 
@@ -447,7 +447,8 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
         const isPileExpanded = expandedPile === pileIndex && expandedCardIndex !== null;
 
         const topPosition = calculateTopPosition(cardIndex);
-        const singleCardHeight = cardHeightForWidth(dimensions.width);
+        const pileWidth = dimensions.width > 0 ? dimensions.width : cardWidth;
+        const singleCardHeight = cardHeightForWidth(pileWidth);
 
         return (
           <TouchableWithoutFeedback
@@ -466,7 +467,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
                 zIndex: getCardZIndex(cardIndex),
                 top: topPosition,
                 position: 'absolute',
-                width: dimensions.width,
+                width: pileWidth,
                 height: singleCardHeight,
               }
             ]}>
@@ -492,7 +493,8 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
 const styles = StyleSheet.create({
   pileContainer: {
     position: 'relative',
-    marginHorizontal: 0,
+    flex: 1,
+    maxWidth: undefined,
   },
   emptySlot: {
     width: '100%',
