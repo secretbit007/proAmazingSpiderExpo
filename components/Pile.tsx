@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutChangeEvent, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
+import { StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
 import { CARD_ASPECT_RATIO, cardHeightForWidth } from '../constants/CardLayout';
 import { COLORS } from '../constants/Colors';
 import { Card } from '../types/gameTypes';
@@ -9,6 +9,7 @@ interface PileProps {
   cards: Card[];
   pileIndex: number;
   cardWidth: number;
+  columnHeight: number;
   hoveredCard: { pileIndex: number; cardIndex: number } | null;
   onCardPress?: (pileIndex: number, cardIndex: number) => void;
   onCardHover?: (pileIndex: number, cardIndex: number, isHovered: boolean) => void;
@@ -25,6 +26,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
   cards,
   pileIndex,
   cardWidth,
+  columnHeight,
   hoveredCard,
   onCardPress,
   onCardHover,
@@ -32,8 +34,6 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
   onTouchEvent,
   disabled = false,
 }, ref) => {
-  const defaultHeight = Math.round(cardWidth / CARD_ASPECT_RATIO);
-  const [dimensions, setDimensions] = React.useState({ width: cardWidth, height: defaultHeight });
   const [expandedPile, setExpandedPile] = React.useState<number | null>(null);
   const [expandedCardIndex, setExpandedCardIndex] = React.useState<number | null>(null);
   const prevLengthRef = React.useRef<number>(cards.length);
@@ -47,11 +47,6 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
     }
     prevLengthRef.current = cards.length;
   }, [cards.length, onExpansionChange]);
-
-  React.useEffect(() => {
-    const height = Math.round(cardWidth / CARD_ASPECT_RATIO);
-    setDimensions({ width: cardWidth, height });
-  }, [cardWidth]);
 
   const handleCardPress = (cardIndex: number) => {
     if (disabled) return;
@@ -229,26 +224,20 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
     return firstFaceUpIndex >= 0 ? firstFaceUpIndex : cards.length - 1;
   };
 
-  const onLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-    setDimensions({ width, height });
-  };
-
   const getGapMetrics = () => {
-    const pileWidth = dimensions.width > 0 ? dimensions.width : cardWidth;
-    const cardHeight = cardHeightForWidth(pileWidth);
-    const gapByWidth = pileWidth * 0.5;
+    const cardHeight = cardHeightForWidth(cardWidth);
+    const gapByWidth = cardWidth * 0.5;
     const cardCount = cards.length;
-    const containerHeight = Math.max(dimensions.height, cardHeight);
+    const containerHeight = Math.max(columnHeight, cardHeight);
     const gapByHeight =
       cardCount > 1 ? (containerHeight - cardHeight * 2) / cardCount : gapByWidth;
     const baseGapSize = Math.max(1, Math.min(gapByWidth, gapByHeight));
     const requiresExpansion = baseGapSize <= gapByWidth * 0.85;
-    return { cardHeight, gapByWidth, baseGapSize, requiresExpansion };
+    return { cardHeight, gapByWidth, baseGapSize, requiresExpansion, containerHeight };
   };
 
   const calculateGapSize = (cardIndex: number) => {
-    const { gapByWidth, baseGapSize } = getGapMetrics();
+    const { gapByWidth, baseGapSize, containerHeight } = getGapMetrics();
     
     // If this pile is expanded, calculate the 7-card expansion range for face-up cards only
     if (expandedPile === pileIndex && expandedCardIndex !== null && baseGapSize <= gapByWidth * 0.85) {
@@ -305,8 +294,8 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
       totalHeightNeeded += cardHeight * cards.length;
       
       // If total height exceeds container height, reduce gap for unexpanded cards
-      if (totalHeightNeeded > dimensions.height) {
-        const availableHeightForGaps = dimensions.height - (cardHeight * cards.length);
+      if (totalHeightNeeded > containerHeight) {
+        const availableHeightForGaps = containerHeight - (cardHeight * cards.length);
         const expandedCardsGapHeight = gapByWidth * (expandedCardsCount - 1);
         const unexpandedCardsCount = cards.length - expandedCardsCount;
         
@@ -420,7 +409,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
   if (cards.length === 0) {
     return (
       <TouchableWithoutFeedback onPress={() => onTouchEvent?.(pileIndex)}>
-        <View style={styles.pileContainer} onLayout={onLayout}>
+        <View style={[styles.pileContainer, columnHeight > 0 && { height: columnHeight }]}>
           <View style={[styles.emptySlot, { aspectRatio: CARD_ASPECT_RATIO }]}>
             <View style={styles.emptySlotInner} />
           </View>
@@ -431,7 +420,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
 
   return (
     <TouchableWithoutFeedback onPress={() => onTouchEvent?.(pileIndex)}>
-      <View style={styles.pileContainer} onLayout={onLayout}>
+      <View style={[styles.pileContainer, columnHeight > 0 && { height: columnHeight }]}>
         {cards.map((card, cardIndex) => {
         const isInteractive = cardIndex >= interactiveStartIndex;
         const isHovered = hoveredCard?.pileIndex === pileIndex && 
@@ -440,8 +429,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
         const isPileExpanded = expandedPile === pileIndex && expandedCardIndex !== null;
 
         const topPosition = calculateTopPosition(cardIndex);
-        const pileWidth = dimensions.width > 0 ? dimensions.width : cardWidth;
-        const singleCardHeight = cardHeightForWidth(pileWidth);
+        const singleCardHeight = cardHeightForWidth(cardWidth);
 
         return (
           <TouchableWithoutFeedback
@@ -460,7 +448,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
                 zIndex: getCardZIndex(cardIndex),
                 top: topPosition,
                 position: 'absolute',
-                width: pileWidth,
+                width: cardWidth,
                 height: singleCardHeight,
               }
             ]}>

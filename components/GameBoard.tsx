@@ -51,6 +51,7 @@ const BUTTON_DESCRIPTIONS: Record<string, string> = {
 export const GameBoard: React.FC = () => {
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+    const [isStartingNewGame, setIsStartingNewGame] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
     const [isSolving, setIsSolving] = useState<boolean>(false);
@@ -68,13 +69,13 @@ export const GameBoard: React.FC = () => {
     const tooltipOpacity = useRef(new Animated.Value(0)).current;
     const tooltipHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { width: screenWidth } = useWindowDimensions();
-    const [tableWidth, setTableWidth] = useState(0);
+    const [tableLayout, setTableLayout] = useState({ width: 0, height: 0 });
     const cardLayout = useMemo(() => {
-        if (tableWidth > 0) {
-            return computeCardLayoutFromWidth(tableWidth);
+        if (tableLayout.width > 0) {
+            return computeCardLayoutFromWidth(tableLayout.width);
         }
         return computeCardLayout(screenWidth);
-    }, [tableWidth, screenWidth]);
+    }, [tableLayout.width, screenWidth]);
 
     // Completion animation state
     const [animatingSuit, setAnimatingSuit] = useState<string | null>(null);
@@ -522,14 +523,14 @@ export const GameBoard: React.FC = () => {
             moveRunIdRef.current += 1;
             setIsSolving(false);
             setIsMovingCard(false);
-            setLoading(true);
+            setIsStartingNewGame(true);
             setActionError(null);
             const newState = await gameService.startNewGame(0);
             setGameState(newState[0]);
         } catch (err) {
             setActionError(actionErrorMessage(err, 'Failed to start a new game.'));
         } finally {
-            setLoading(false);
+            setIsStartingNewGame(false);
         }
     };
 
@@ -732,21 +733,34 @@ export const GameBoard: React.FC = () => {
                 <View style={styles.tableFrame}>
                     <View
                         style={styles.tableInner}
-                        onLayout={(e) => setTableWidth(e.nativeEvent.layout.width)}
+                        onLayout={(e) => {
+                            const { width, height } = e.nativeEvent.layout;
+                            if (width > 0 && height > 0) {
+                                setTableLayout({ width, height });
+                            }
+                        }}
                     >
                         <View style={styles.pilesContainer}>
                             {gameState.piles.map((pile, pileIndex) => (
                                 <View
                                     key={pileIndex}
-                                    style={[styles.pileSlot, { width: cardLayout.cardWidth }]}
+                                    style={[
+                                        styles.pileSlot,
+                                        {
+                                            width: cardLayout.cardWidth,
+                                            minHeight: tableLayout.height > 0 ? tableLayout.height : undefined,
+                                        },
+                                    ]}
                                 >
                                 <Pile
+                                    key={`${gameState.sessionId ?? 'game'}-${pileIndex}`}
                                     ref={(ref) => {
                                         pileRefs.current[pileIndex] = ref;
                                     }}
                                     cards={pile.cards}
                                     pileIndex={pileIndex}
                                     cardWidth={cardLayout.cardWidth}
+                                    columnHeight={tableLayout.height}
                                     hoveredCard={hoveredCard}
                                     onCardPress={handleCardPress}
                                     onCardHover={handleCardHover}
@@ -829,7 +843,7 @@ export const GameBoard: React.FC = () => {
                         <Text style={styles.actionBarTitle}>CONTROLS</Text>
                         <View style={styles.buttonBar}>
                     {([
-                        { key: 'new' as const, variant: 'new' as GameButtonVariant, icon: '＋', label: 'New', onPress: handleNewGame, disabled: loading },
+                        { key: 'new' as const, variant: 'new' as GameButtonVariant, icon: '＋', label: 'New', onPress: handleNewGame, disabled: loading || isStartingNewGame },
                         { key: 'deal', variant: 'deal' as GameButtonVariant, icon: '▤', label: 'Deal', onPress: handleDealCards, disabled: isSolving || isMovingCard },
                         { key: 'solve', variant: 'solve' as GameButtonVariant, icon: '★', label: isSolving ? 'Busy' : 'Solve', onPress: handleSolve, disabled: isSolving },
                         { key: 'undo', variant: 'undo' as GameButtonVariant, icon: '↩', label: 'Undo', onPress: handleUndo, disabled: isSolving || isMovingCard },
