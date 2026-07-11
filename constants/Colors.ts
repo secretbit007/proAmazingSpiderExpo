@@ -17,7 +17,7 @@ export const COLORS = {
 
   // Cards
   cardFace: '#fffef5',
-  cardBorder: '#c8b88a',
+  cardBorder: 'rgba(0, 0, 0, 0.14)',
   cardInnerBorder: 'rgba(255, 255, 255, 0.85)',
   cardShadow: 'rgba(0, 0, 0, 0.45)',
   cardGloss: 'rgba(255, 255, 255, 0.22)',

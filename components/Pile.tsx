@@ -499,8 +499,8 @@ const styles = StyleSheet.create({
     left: 0,
   },
   hoveredCard: {
-    borderColor: COLORS.brassLight,
-    borderWidth: 2.5,
+    borderColor: COLORS.selectionBlue,
+    borderWidth: 2,
     borderRadius: 7,
   },
   nonInteractiveCard: {

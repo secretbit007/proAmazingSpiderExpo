@@ -1,5 +1,14 @@
 import React from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { COLORS } from '../constants/Colors';
 
 interface HelpModalProps {
@@ -23,48 +32,61 @@ const HELP_PARAGRAPHS = [
 ];
 
 export const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
-  if (!visible) return null;
-
   return (
-    <View style={styles.modalOverlay}>
-      <View style={styles.modalContainer}>
-        <View style={styles.modalInner}>
-        <Text style={styles.modalTitle}>How to Play AmazingSpider</Text>
-        <Text style={styles.modalSubtitle}>Rules & strategy</Text>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View style={styles.modalOverlay}>
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close help" />
 
-        <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
-          {HELP_PARAGRAPHS.map((paragraph, index) => (
-            <Text key={index} style={styles.paragraph}>
-              {paragraph}
-            </Text>
-          ))}
-        </ScrollView>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalInner}>
+            <Text style={styles.modalTitle}>How to Play AmazingSpider</Text>
+            <Text style={styles.modalSubtitle}>Rules & strategy</Text>
 
-        <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.85}>
-          <Text style={styles.closeButtonText}>Got it!</Text>
-        </TouchableOpacity>
+            <ScrollView
+              style={styles.scrollArea}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+            >
+              {HELP_PARAGRAPHS.map((paragraph, index) => (
+                <Text key={index} style={styles.paragraph}>
+                  {paragraph}
+                </Text>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.85}>
+              <Text style={styles.closeButtonText}>Got it!</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
   modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000,
+    paddingHorizontal: 16,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
   },
   modalContainer: {
-    width: Platform.OS === 'web' ? '55%' : '90%',
+    width: Platform.OS === 'web' ? '55%' : '100%',
     maxWidth: 560,
-    maxHeight: '80%',
+    maxHeight: '82%',
     backgroundColor: COLORS.woodDark,
     borderRadius: 16,
     padding: 4,
@@ -74,7 +96,17 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.6,
     shadowRadius: 24,
-    elevation: 20,
+    elevation: 24,
+    zIndex: 1,
+  },
+  modalInner: {
+    flex: 1,
+    backgroundColor: COLORS.hudBg,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.brass,
+    padding: 18,
+    overflow: 'hidden',
   },
   modalTitle: {
     color: COLORS.textGold,
@@ -91,19 +123,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     marginTop: 4,
-    marginBottom: 14,
+    marginBottom: 12,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
-  modalInner: {
-    backgroundColor: COLORS.hudBg,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.brass,
-    padding: 18,
-  },
   scrollArea: {
     flexGrow: 0,
+    flexShrink: 1,
+    maxHeight: Platform.OS === 'web' ? 420 : 340,
   },
   scrollContent: {
     paddingHorizontal: 4,
@@ -116,7 +143,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   closeButton: {
-    marginTop: 10,
+    marginTop: 12,
     paddingVertical: 13,
     borderRadius: 10,
     alignItems: 'center',
