@@ -839,9 +839,7 @@ export const GameBoard: React.FC = () => {
                 )}
 
                 <View style={styles.actionBarFrame}>
-                    <View style={styles.actionBarInner}>
-                        <Text style={styles.actionBarTitle}>CONTROLS</Text>
-                        <View style={styles.buttonBar}>
+                    <View style={styles.buttonBar}>
                     {([
                         { key: 'new' as const, variant: 'new' as GameButtonVariant, icon: '＋', label: 'New', onPress: handleNewGame, disabled: loading || isStartingNewGame },
                         { key: 'deal', variant: 'deal' as GameButtonVariant, icon: '▤', label: 'Deal', onPress: handleDealCards, disabled: isSolving || isMovingCard },
@@ -869,7 +867,6 @@ export const GameBoard: React.FC = () => {
                             />
                         </View>
                     ))}
-                        </View>
                     </View>
                 </View>
                 {actionError && (
@@ -1044,48 +1041,43 @@ const styles = StyleSheet.create({
 
     // ── HUD (game scoreboard) ───────────────────────
     hudFrame: {
-        marginHorizontal: 10,
-        marginTop: 6,
-        marginBottom: 4,
-        borderRadius: 14,
-        borderWidth: 3,
+        marginHorizontal: 6,
+        marginTop: 4,
+        marginBottom: 2,
+        borderRadius: 10,
+        borderWidth: 2,
         borderColor: COLORS.woodLight,
         backgroundColor: COLORS.woodDark,
-        padding: 3,
+        padding: 2,
         zIndex: 3000,
         elevation: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.5,
-        shadowRadius: 8,
     },
     hudInner: {
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
         backgroundColor: COLORS.hudBg,
-        borderRadius: 11,
+        borderRadius: 8,
         borderWidth: 1,
         borderColor: COLORS.brass,
-        paddingVertical: 6,
-        paddingHorizontal: 8,
+        paddingVertical: 3,
+        paddingHorizontal: 4,
     },
     hudDivider: {
-        width: 2,
-        height: 36,
+        width: 1,
+        height: 24,
         backgroundColor: COLORS.woodMid,
-        borderRadius: 1,
     },
     hudStock: {
         alignItems: 'center',
-        paddingHorizontal: 8,
+        paddingHorizontal: 4,
     },
     hudStockLabel: {
         color: COLORS.brassLight,
-        fontSize: 9,
+        fontSize: 8,
         fontWeight: '800',
-        letterSpacing: 1.4,
-        marginBottom: 2,
+        letterSpacing: 1,
+        marginBottom: 1,
     },
 
     // ── Table play area ─────────────────────────────
@@ -1170,44 +1162,21 @@ const styles = StyleSheet.create({
 
     // ── Action bar ──────────────────────────────────
     actionBarFrame: {
-        marginHorizontal: 10,
-        marginBottom: 8,
-        borderRadius: 16,
-        borderWidth: 3,
+        marginHorizontal: 6,
+        marginBottom: 4,
+        borderRadius: 10,
+        borderWidth: 2,
         borderColor: COLORS.woodLight,
-        backgroundColor: COLORS.woodDark,
-        padding: 3,
+        backgroundColor: COLORS.hudBg,
+        paddingVertical: 4,
+        paddingHorizontal: 4,
         zIndex: 3000,
         elevation: 14,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.4,
-        shadowRadius: 6,
-    },
-    actionBarInner: {
-        backgroundColor: COLORS.hudBg,
-        borderRadius: 13,
-        borderWidth: 2,
-        borderColor: COLORS.brass,
-        paddingTop: 6,
-        paddingBottom: 8,
-        paddingHorizontal: 6,
-    },
-    actionBarTitle: {
-        color: COLORS.brassLight,
-        fontSize: 9,
-        fontWeight: '800',
-        letterSpacing: 2,
-        textAlign: 'center',
-        marginBottom: 6,
-        textShadowColor: 'rgba(0,0,0,0.5)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 2,
     },
     buttonBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-end',
+        alignItems: 'stretch',
         gap: 4,
         overflow: 'visible',
     },

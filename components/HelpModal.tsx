@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { COLORS } from '../constants/Colors';
@@ -32,6 +33,9 @@ const HELP_PARAGRAPHS = [
 ];
 
 export const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
+  const { height: windowHeight } = useWindowDimensions();
+  const scrollHeight = Math.min(380, Math.max(200, windowHeight * 0.42));
+
   return (
     <Modal
       visible={visible}
@@ -40,32 +44,29 @@ export const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View style={styles.modalOverlay}>
+      <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close help" />
 
-        <View style={styles.modalContainer}>
-          <View style={styles.modalInner}>
-            <Text style={styles.modalTitle}>How to Play AmazingSpider</Text>
-            <Text style={styles.modalSubtitle}>Rules & strategy</Text>
+        <View style={styles.sheet}>
+          <Text style={styles.title}>How to Play AmazingSpider</Text>
+          <Text style={styles.subtitle}>Rules & strategy</Text>
 
-            <ScrollView
-              style={styles.scrollArea}
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator
-              nestedScrollEnabled
-              keyboardShouldPersistTaps="handled"
-            >
-              {HELP_PARAGRAPHS.map((paragraph, index) => (
-                <Text key={index} style={styles.paragraph}>
-                  {paragraph}
-                </Text>
-              ))}
-            </ScrollView>
+          <ScrollView
+            style={[styles.scrollArea, { maxHeight: scrollHeight }]}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
+          >
+            {HELP_PARAGRAPHS.map((paragraph, index) => (
+              <Text key={index} style={styles.paragraph}>
+                {paragraph}
+              </Text>
+            ))}
+          </ScrollView>
 
-            <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.85}>
-              <Text style={styles.closeButtonText}>Got it!</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.85}>
+            <Text style={styles.closeButtonText}>Got it!</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -73,91 +74,69 @@ export const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
   },
-  modalContainer: {
+  sheet: {
     width: Platform.OS === 'web' ? '55%' : '100%',
-    maxWidth: 560,
-    maxHeight: '82%',
-    backgroundColor: COLORS.woodDark,
-    borderRadius: 16,
-    padding: 4,
-    borderWidth: 3,
-    borderColor: COLORS.woodLight,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.6,
-    shadowRadius: 24,
-    elevation: 24,
-    zIndex: 1,
-  },
-  modalInner: {
-    flex: 1,
+    maxWidth: 520,
     backgroundColor: COLORS.hudBg,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 2,
     borderColor: COLORS.brass,
-    padding: 18,
-    overflow: 'hidden',
+    padding: 16,
+    zIndex: 2,
+    elevation: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
   },
-  modalTitle: {
+  title: {
     color: COLORS.textGold,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '900',
     textAlign: 'center',
-    letterSpacing: 0.8,
-    textShadowColor: COLORS.goldGlow,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-  },
-  modalSubtitle: {
-    color: COLORS.brassLight,
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 12,
-    fontWeight: '600',
     letterSpacing: 0.5,
   },
+  subtitle: {
+    color: COLORS.brassLight,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 2,
+    marginBottom: 10,
+    fontWeight: '600',
+  },
   scrollArea: {
-    flexGrow: 0,
-    flexShrink: 1,
-    maxHeight: Platform.OS === 'web' ? 420 : 340,
+    width: '100%',
   },
   scrollContent: {
-    paddingHorizontal: 4,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
   paragraph: {
     color: COLORS.textSecondary,
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 20,
     marginBottom: 10,
   },
   closeButton: {
     marginTop: 12,
-    paddingVertical: 13,
-    borderRadius: 10,
+    paddingVertical: 10,
+    borderRadius: 8,
     alignItems: 'center',
     backgroundColor: COLORS.buttonDeal,
-    borderWidth: 2,
-    borderColor: COLORS.brass,
-    borderBottomWidth: 4,
-    borderBottomColor: COLORS.buttonDealDark,
   },
   closeButtonText: {
     color: COLORS.buttonText,
     fontWeight: '800',
-    fontSize: 15,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    fontSize: 14,
+    letterSpacing: 0.4,
   },
 });

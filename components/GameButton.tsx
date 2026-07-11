@@ -5,40 +5,12 @@ import { COLORS } from '../constants/Colors';
 
 export type GameButtonVariant = 'new' | 'deal' | 'solve' | 'undo' | 'help';
 
-const VARIANT_STYLES: Record<
-  GameButtonVariant,
-  { face: string; rim: string; glow: string; iconBg: string }
-> = {
-  new: {
-    face: COLORS.buttonNew,
-    rim: '#1e6b38',
-    glow: 'rgba(45, 143, 78, 0.55)',
-    iconBg: '#3aad62',
-  },
-  deal: {
-    face: COLORS.buttonDeal,
-    rim: '#1a5088',
-    glow: 'rgba(43, 108, 176, 0.55)',
-    iconBg: '#3d8fd4',
-  },
-  solve: {
-    face: COLORS.buttonSolve,
-    rim: '#5b21b6',
-    glow: 'rgba(124, 58, 237, 0.55)',
-    iconBg: '#9f67ff',
-  },
-  undo: {
-    face: COLORS.buttonUndo,
-    rim: '#2d3338',
-    glow: 'rgba(90, 98, 104, 0.45)',
-    iconBg: '#7a848c',
-  },
-  help: {
-    face: COLORS.buttonHelp,
-    rim: '#92400e',
-    glow: 'rgba(194, 120, 3, 0.55)',
-    iconBg: '#e8a020',
-  },
+const VARIANT_STYLES: Record<GameButtonVariant, { face: string; shadow: string }> = {
+  new: { face: COLORS.buttonNew, shadow: COLORS.buttonNewDark },
+  deal: { face: COLORS.buttonDeal, shadow: COLORS.buttonDealDark },
+  solve: { face: COLORS.buttonSolve, shadow: COLORS.buttonSolveDark },
+  undo: { face: COLORS.buttonUndo, shadow: COLORS.buttonUndoDark },
+  help: { face: COLORS.buttonHelp, shadow: COLORS.buttonHelpDark },
 };
 
 interface GameButtonProps {
@@ -89,18 +61,12 @@ export const GameButton: React.FC<GameButtonProps> = ({
 
   const translateY = pressAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 5],
-  });
-
-  const scale = pressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0.94],
+    outputRange: [0, 2],
   });
 
   return (
     <View style={[styles.wrapper, disabled && styles.wrapperDisabled]}>
-      <View style={[styles.baseShadow, { backgroundColor: colors.rim }]} />
-
+      <View style={[styles.baseShadow, { backgroundColor: colors.shadow }]} />
       <TouchableWithoutFeedback
         onPress={disabled ? undefined : onPress}
         onPressIn={handlePressIn}
@@ -109,26 +75,12 @@ export const GameButton: React.FC<GameButtonProps> = ({
       >
         <Animated.View
           style={[
-            styles.token,
-            {
-              backgroundColor: colors.face,
-              transform: [{ translateY }, { scale }],
-              shadowColor: colors.glow,
-            },
+            styles.face,
+            { backgroundColor: colors.face, transform: [{ translateY }] },
           ]}
         >
-          <View style={styles.tokenHighlight} />
-          <View style={styles.tokenRim} />
-
-          <View style={[styles.medallionOuter, { borderColor: COLORS.brass }]}>
-            <View style={[styles.medallionInner, { backgroundColor: colors.iconBg }]}>
-              <Text style={styles.icon}>{icon}</Text>
-            </View>
-          </View>
-
-          <View style={styles.labelPlaque}>
-            <Text style={styles.label}>{label}</Text>
-          </View>
+          <Text style={styles.icon}>{icon}</Text>
+          <Text style={styles.label}>{label}</Text>
         </Animated.View>
       </TouchableWithoutFeedback>
     </View>
@@ -138,8 +90,7 @@ export const GameButton: React.FC<GameButtonProps> = ({
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    alignItems: 'center',
-    minHeight: 78,
+    minHeight: 40,
     position: 'relative',
   },
   wrapperDisabled: {
@@ -147,94 +98,34 @@ const styles = StyleSheet.create({
   },
   baseShadow: {
     position: 'absolute',
+    left: 1,
+    right: 1,
     bottom: 0,
-    left: 4,
-    right: 4,
-    height: 68,
-    borderRadius: 14,
+    top: 2,
+    borderRadius: 8,
   },
-  token: {
-    width: '100%',
-    alignItems: 'center',
-    paddingTop: 6,
-    paddingBottom: 5,
-    paddingHorizontal: 2,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    borderBottomWidth: 4,
-    borderBottomColor: 'rgba(0, 0, 0, 0.35)',
-    overflow: 'hidden',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  tokenHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '38%',
-    backgroundColor: COLORS.buttonHighlight,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-  },
-  tokenRim: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    right: 3,
-    bottom: 3,
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.12)',
-  },
-  medallionOuter: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2.5,
-    padding: 2,
-    backgroundColor: COLORS.woodDark,
-    marginBottom: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  medallionInner: {
+  face: {
     flex: 1,
-    borderRadius: 14,
+    marginBottom: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    paddingVertical: 4,
+    paddingHorizontal: 2,
   },
   icon: {
-    fontSize: 17,
+    fontSize: 13,
     color: COLORS.buttonText,
-    fontWeight: '900',
-    textShadowColor: 'rgba(0, 0, 0, 0.45)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-    marginTop: -1,
-  },
-  labelPlaque: {
-    backgroundColor: 'rgba(0, 0, 0, 0.28)',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    fontWeight: '800',
+    marginBottom: 1,
   },
   label: {
-    color: COLORS.textGold,
-    fontWeight: '800',
-    fontSize: 9,
-    letterSpacing: 0.8,
+    color: COLORS.buttonText,
+    fontWeight: '700',
+    fontSize: 8,
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
-    textAlign: 'center',
   },
 });

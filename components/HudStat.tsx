@@ -22,19 +22,16 @@ export const HudStat: React.FC<HudStatProps> = ({ label, value, suffix, accent =
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    minWidth: 72,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    minWidth: 56,
   },
   label: {
     color: COLORS.brassLight,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '800',
-    letterSpacing: 1.4,
-    marginBottom: 2,
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    letterSpacing: 1,
+    marginBottom: 1,
   },
   valueRow: {
     flexDirection: 'row',
@@ -42,19 +39,16 @@ const styles = StyleSheet.create({
   },
   value: {
     color: COLORS.textPrimary,
-    fontSize: 22,
-    fontWeight: '900',
-    textShadowColor: 'rgba(0,0,0,0.45)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    fontSize: 16,
+    fontWeight: '800',
   },
   valueAccent: {
     color: COLORS.textGold,
   },
   suffix: {
     color: COLORS.textMuted,
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
     marginLeft: 1,
   },
 });
