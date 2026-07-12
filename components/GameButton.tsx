@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import React, { useRef } from 'react';
-import { Animated, Platform, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
+import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { COLORS } from '../constants/Colors';
 
 export type GameButtonVariant = 'new' | 'deal' | 'solve' | 'undo' | 'help';
@@ -61,28 +61,33 @@ export const GameButton: React.FC<GameButtonProps> = ({
 
   const translateY = pressAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 2],
+    outputRange: [0, 1],
   });
 
   return (
     <View style={[styles.wrapper, disabled && styles.wrapperDisabled]}>
-      <View style={[styles.baseShadow, { backgroundColor: colors.shadow }]} />
-      <TouchableWithoutFeedback
-        onPress={disabled ? undefined : onPress}
+      <TouchableOpacity
+        onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        activeOpacity={0.85}
         disabled={disabled}
+        style={styles.touchTarget}
       >
         <Animated.View
           style={[
             styles.face,
-            { backgroundColor: colors.face, transform: [{ translateY }] },
+            {
+              backgroundColor: colors.face,
+              borderBottomColor: colors.shadow,
+              transform: [{ translateY }],
+            },
           ]}
         >
           <Text style={styles.icon}>{icon}</Text>
           <Text style={styles.label}>{label}</Text>
         </Animated.View>
-      </TouchableWithoutFeedback>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -90,42 +95,38 @@ export const GameButton: React.FC<GameButtonProps> = ({
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    minHeight: 40,
-    position: 'relative',
+    height: '100%',
   },
   wrapperDisabled: {
     opacity: 0.5,
   },
-  baseShadow: {
-    position: 'absolute',
-    left: 1,
-    right: 1,
-    bottom: 0,
-    top: 2,
-    borderRadius: 8,
+  touchTarget: {
+    flex: 1,
+    height: '100%',
   },
   face: {
     flex: 1,
-    marginBottom: 2,
-    borderRadius: 8,
+    borderRadius: 7,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderBottomWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 2,
+    paddingVertical: 2,
+    paddingHorizontal: 1,
   },
   icon: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.buttonText,
     fontWeight: '800',
-    marginBottom: 1,
+    lineHeight: 14,
   },
   label: {
     color: COLORS.buttonText,
     fontWeight: '700',
-    fontSize: 8,
-    letterSpacing: 0.4,
+    fontSize: 7,
+    letterSpacing: 0.3,
     textTransform: 'uppercase',
+    lineHeight: 9,
   },
 });

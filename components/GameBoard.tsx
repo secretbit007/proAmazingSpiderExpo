@@ -701,6 +701,7 @@ export const GameBoard: React.FC = () => {
                 style={styles.backgroundImage}
                 resizeMode="cover"
             >
+                <View style={styles.gameLayout}>
                 <View style={styles.vignetteOverlay} pointerEvents="none" />
                 <View style={styles.feltTint} pointerEvents="none" />
 
@@ -1009,6 +1010,7 @@ export const GameBoard: React.FC = () => {
                         </Animated.View>
                     </Animated.View>
                 )}
+                </View>
             </ImageBackground>
         </TouchableWithoutFeedback>
     );
@@ -1019,6 +1021,10 @@ const styles = StyleSheet.create({
         flex: 1,
         width: '100%',
         height: '100%',
+    },
+    gameLayout: {
+        flex: 1,
+        flexDirection: 'column',
     },
     vignetteOverlay: {
         ...StyleSheet.absoluteFillObject,
@@ -1041,6 +1047,7 @@ const styles = StyleSheet.create({
 
     // ── HUD (game scoreboard) ───────────────────────
     hudFrame: {
+        flexShrink: 0,
         marginHorizontal: 6,
         marginTop: 4,
         marginBottom: 2,
@@ -1083,6 +1090,7 @@ const styles = StyleSheet.create({
     // ── Table play area ─────────────────────────────
     tableFrame: {
         flex: 1,
+        minHeight: 0,
         marginHorizontal: 4,
         marginVertical: 3,
         borderRadius: 16,
@@ -1147,6 +1155,7 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     inlineErrorContainer: {
+        flexShrink: 0,
         backgroundColor: 'rgba(180, 40, 30, 0.35)',
         borderTopWidth: 2,
         borderTopColor: 'rgba(220, 80, 60, 0.6)',
@@ -1162,26 +1171,29 @@ const styles = StyleSheet.create({
 
     // ── Action bar ──────────────────────────────────
     actionBarFrame: {
+        flexShrink: 0,
         marginHorizontal: 6,
-        marginBottom: 4,
+        marginBottom: 2,
         borderRadius: 10,
         borderWidth: 2,
         borderColor: COLORS.woodLight,
         backgroundColor: COLORS.hudBg,
-        paddingVertical: 4,
-        paddingHorizontal: 4,
+        paddingVertical: 3,
+        paddingHorizontal: 3,
         zIndex: 3000,
         elevation: 14,
     },
     buttonBar: {
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'space-between',
-        alignItems: 'stretch',
-        gap: 4,
-        overflow: 'visible',
+        gap: 3,
+        height: 38,
     },
     buttonWrapper: {
         flex: 1,
+        height: 38,
+        overflow: 'visible',
         position: 'relative',
     },
     tooltipContainer: {
@@ -1287,6 +1299,7 @@ const styles = StyleSheet.create({
 
     // ── Completed suits tray ────────────────────────
     completedTray: {
+        flexShrink: 0,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
