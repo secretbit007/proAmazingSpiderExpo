@@ -6,8 +6,8 @@ export const PILE_GAP = 2;
 
 /** Upper cap in portrait / general use. */
 export const MAX_CARD_WIDTH = 104;
-/** Tighter cap in landscape so cards do not dominate the shorter viewport. */
-export const MAX_CARD_WIDTH_LANDSCAPE = 68;
+/** Tighter cap in landscape — between portrait max and the old uncapped fit width. */
+export const MAX_CARD_WIDTH_LANDSCAPE = 78;
 
 /** Approx. horizontal space lost to table frame, margins, and padding. */
 export const TABLE_HORIZONTAL_INSET = 28;
@@ -60,8 +60,8 @@ export function computeCardLayoutFromWidth(
   let maxWidth = landscape ? MAX_CARD_WIDTH_LANDSCAPE : MAX_CARD_WIDTH;
 
   if (landscape && availableHeight != null && availableHeight > 0) {
-    // Keep card height from dominating a short landscape column.
-    const maxByColumnHeight = Math.floor((availableHeight * 0.2) * CARD_ASPECT_RATIO);
+    // Allow taller cards in landscape while still leaving room for stacked piles.
+    const maxByColumnHeight = Math.floor((availableHeight * 0.38) * CARD_ASPECT_RATIO);
     if (maxByColumnHeight > 0) {
       maxWidth = Math.min(maxWidth, maxByColumnHeight);
     }

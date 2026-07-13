@@ -52,7 +52,6 @@ export const CardComponent: React.FC<CardProps> = ({
         <View style={styles.faceUpCard}>
           <View style={styles.cardWhiteBackground} />
           <View style={styles.cardGlossStrip} />
-          <View style={styles.cardInnerFrame} />
 
           {/* Top-left corner - Rank */}
           <View style={[styles.topLeftCorner, { top: cornerRankVertical, left: cornerRankSuitHorizontal }]}>
@@ -161,16 +160,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardGloss,
     borderTopLeftRadius: 5,
     borderTopRightRadius: 5,
-  },
-  cardInnerFrame: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    right: 3,
-    bottom: 3,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.06)',
   },
   topLeftCorner: {
     position: 'absolute',
