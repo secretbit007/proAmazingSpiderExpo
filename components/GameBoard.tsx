@@ -68,14 +68,19 @@ export const GameBoard: React.FC = () => {
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
     const tooltipOpacity = useRef(new Animated.Value(0)).current;
     const tooltipHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const { width: screenWidth } = useWindowDimensions();
+    const { width: screenWidth, height: screenHeight } = useWindowDimensions();
     const [tableLayout, setTableLayout] = useState({ width: 0, height: 0 });
     const cardLayout = useMemo(() => {
         if (tableLayout.width > 0) {
-            return computeCardLayoutFromWidth(tableLayout.width);
+            return computeCardLayoutFromWidth(
+                tableLayout.width,
+                tableLayout.height,
+                screenWidth,
+                screenHeight
+            );
         }
-        return computeCardLayout(screenWidth);
-    }, [tableLayout.width, screenWidth]);
+        return computeCardLayout(screenWidth, screenHeight);
+    }, [tableLayout.width, tableLayout.height, screenWidth, screenHeight]);
 
     // Completion animation state
     const [animatingSuit, setAnimatingSuit] = useState<string | null>(null);
