@@ -5,6 +5,7 @@ import { COLORS } from '../constants/Colors';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
 import { IMAGES, preloadImages } from '../utils/assets';
+import { warmCardFaceCache } from '../utils/cardFaceCache';
 import { GameButton, GameButtonVariant } from './GameButton';
 import { HelpModal } from './HelpModal';
 import { HudStat } from './HudStat';
@@ -81,6 +82,10 @@ export const GameBoard: React.FC = () => {
         }
         return computeCardLayout(screenWidth, screenHeight);
     }, [tableLayout.width, tableLayout.height, screenWidth, screenHeight]);
+
+    useEffect(() => {
+        warmCardFaceCache(cardLayout.cardWidth);
+    }, [cardLayout.cardWidth]);
 
     // Completion animation state
     const [animatingSuit, setAnimatingSuit] = useState<string | null>(null);

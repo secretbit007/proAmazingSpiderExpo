@@ -335,13 +335,10 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
           >
             <CardComponent
               card={card}
+              cardWidth={cardWidth}
               isHovered={isHovered}
               isInteractive={isInteractive && !disabled}
-              style={[
-                isHovered && styles.hoveredCard,
-                !isInteractive && styles.nonInteractiveCard,
-                isExpandedOnPile && !isInExpandedRange && styles.unexpandedCard,
-              ]}
+              isDimmed={isExpandedOnPile && !isInExpandedRange}
             />
           </Pressable>
         );
@@ -379,16 +376,5 @@ const styles = StyleSheet.create({
   cardWrapper: {
     position: 'absolute',
     left: 0,
-  },
-  hoveredCard: {
-    borderColor: COLORS.selectionBlue,
-    borderWidth: 2,
-    borderRadius: 7,
-  },
-  nonInteractiveCard: {
-    opacity: 0.88,
-  },
-  unexpandedCard: {
-    opacity: 0.35,
   },
 });

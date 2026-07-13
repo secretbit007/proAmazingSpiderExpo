@@ -1,124 +1,138 @@
 import React from 'react';
-import { Image, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { CARD_ASPECT_RATIO } from '../constants/CardLayout';
 import { COLORS } from '../constants/Colors';
 import { Card } from '../types/gameTypes';
+import { CardFaceMetrics, CardFaceVisual, getCardFaceMetrics, getCardFaceVisual } from '../utils/cardFaceCache';
 import { IMAGES } from '../utils/assets';
 
 interface CardProps {
   card: Card;
-  style?: object;
+  cardWidth: number;
   isHovered?: boolean;
   isInteractive?: boolean;
+  isDimmed?: boolean;
 }
 
-const SUIT_COLORS: Record<string, string> = {
-  hearts: COLORS.hearts,
-  diamonds: COLORS.diamonds,
-  clubs: COLORS.clubs,
-  spades: COLORS.spades,
-};
+interface FaceUpCardFaceProps {
+  visual: CardFaceVisual;
+  metrics: CardFaceMetrics;
+}
 
-export const CardComponent: React.FC<CardProps> = ({
-  card,
-  style,
-  isHovered = false,
-  isInteractive = true,
-}) => {
-  const [dimensions, setDimensions] = React.useState({ width: 80, height: 120 });
-  const suitColor = SUIT_COLORS[card.suit] || COLORS.spades;
-
-  const cornerRankFontSize = dimensions.width * 0.3;
-  const cornerSuitSize = dimensions.width * 0.25;
-  const cornerSuitVertical = dimensions.width * 0.1;
-  const cornerRankVertical = dimensions.width * 0.05;
-  const cornerRankSuitHorizontal = dimensions.width * 0.1;
-
-  const onLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-    setDimensions({ width, height });
-  };
+const FaceUpCardFace = React.memo(function FaceUpCardFace({ visual, metrics }: FaceUpCardFaceProps) {
+  const { rank, suitColor, suitImage } = visual;
+  const {
+    cornerRankFontSize,
+    cornerSuitSize,
+    cornerSuitVertical,
+    cornerRankVertical,
+    cornerRankSuitHorizontal,
+  } = metrics;
 
   return (
-    <View style={[
-      styles.cardContainer,
-      style,
-      isHovered && styles.hoveredCard,
-      !isInteractive && styles.nonInteractiveCard,
-    ]}
-      onLayout={onLayout}
-    >
-      {card.isFaceUp ? (
-        <View style={styles.faceUpCard}>
-          <View style={styles.cardWhiteBackground} />
-          <View style={styles.cardGlossStrip} />
+    <View style={styles.faceUpCard}>
+      <View style={styles.cardWhiteBackground} />
+      <View style={styles.cardGlossStrip} />
 
-          {/* Top-left corner - Rank */}
-          <View style={[styles.topLeftCorner, { top: cornerRankVertical, left: cornerRankSuitHorizontal }]}>
-            <Text style={[styles.cornerRank, { color: suitColor, fontSize: cornerRankFontSize }]}>
-              {card.rank}
-            </Text>
-          </View>
+      <View style={[styles.topLeftCorner, { top: cornerRankVertical, left: cornerRankSuitHorizontal }]}>
+        <Text style={[styles.cornerRank, { color: suitColor, fontSize: cornerRankFontSize }]}>
+          {rank}
+        </Text>
+      </View>
 
-          {/* Top-right corner - Suit */}
-          <View style={[styles.topRightCorner, { top: cornerSuitVertical, right: cornerRankSuitHorizontal }]}>
-            <Image
-              source={IMAGES[card.suit]}
-              style={[
-                styles.cornerSuit,
-                {
-                  tintColor: suitColor,
-                  width: cornerSuitSize,
-                  height: cornerSuitSize,
-                },
-              ]}
-            />
-          </View>
+      <View style={[styles.topRightCorner, { top: cornerSuitVertical, right: cornerRankSuitHorizontal }]}>
+        <Image
+          source={suitImage}
+          style={[
+            styles.cornerSuit,
+            { tintColor: suitColor, width: cornerSuitSize, height: cornerSuitSize },
+          ]}
+        />
+      </View>
 
-          {/* Center suit symbol */}
-          <View style={styles.centerSymbol}>
-            <Image
-              source={IMAGES[card.suit]}
-              style={[styles.centerSuit, { tintColor: suitColor }]}
-            />
-          </View>
+      <View style={styles.centerSymbol}>
+        <Image source={suitImage} style={[styles.centerSuit, { tintColor: suitColor }]} />
+      </View>
 
-          {/* Bottom-left corner - Suit */}
-          <View style={[styles.bottomLeftCorner, { bottom: cornerSuitVertical, left: cornerRankSuitHorizontal }]}>
-            <Image
-              source={IMAGES[card.suit]}
-              style={[
-                styles.cornerSuit,
-                {
-                  tintColor: suitColor,
-                  width: cornerSuitSize,
-                  height: cornerSuitSize,
-                  transform: [{ rotate: '180deg' }],
-                },
-              ]}
-            />
-          </View>
+      <View style={[styles.bottomLeftCorner, { bottom: cornerSuitVertical, left: cornerRankSuitHorizontal }]}>
+        <Image
+          source={suitImage}
+          style={[
+            styles.cornerSuit,
+            {
+              tintColor: suitColor,
+              width: cornerSuitSize,
+              height: cornerSuitSize,
+              transform: [{ rotate: '180deg' }],
+            },
+          ]}
+        />
+      </View>
 
-          {/* Bottom-right corner - Rank */}
-          <View style={[styles.bottomRightCorner, { bottom: cornerRankVertical, right: cornerRankSuitHorizontal }]}>
-            <Text style={[styles.cornerRank, {
+      <View style={[styles.bottomRightCorner, { bottom: cornerRankVertical, right: cornerRankSuitHorizontal }]}>
+        <Text
+          style={[
+            styles.cornerRank,
+            {
               color: suitColor,
               fontSize: cornerRankFontSize,
               transform: [{ rotate: '180deg' }],
-            }]}>
-              {card.rank}
-            </Text>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.cardBackContainer}>
-          <Image source={IMAGES.card_back} style={styles.cardBackImage} />
-          <View style={styles.cardBackOverlay} />
-        </View>
-      )}
+            },
+          ]}
+        >
+          {rank}
+        </Text>
+      </View>
     </View>
   );
-};
+});
+
+const CardBack = React.memo(function CardBack() {
+  return (
+    <View style={styles.cardBackContainer}>
+      <Image source={IMAGES.card_back} style={styles.cardBackImage} />
+      <View style={styles.cardBackOverlay} />
+    </View>
+  );
+});
+
+function CardComponentBase({
+  card,
+  cardWidth,
+  isHovered = false,
+  isInteractive = true,
+  isDimmed = false,
+}: CardProps) {
+  const metrics = getCardFaceMetrics(cardWidth);
+  const visual = card.isFaceUp ? getCardFaceVisual(card.rank, card.suit) : null;
+
+  return (
+    <View
+      style={[
+        styles.cardContainer,
+        isHovered && styles.hoveredCard,
+        !isInteractive && styles.nonInteractiveCard,
+        isDimmed && styles.dimmedCard,
+      ]}
+    >
+      {visual ? <FaceUpCardFace visual={visual} metrics={metrics} /> : <CardBack />}
+    </View>
+  );
+}
+
+function areCardPropsEqual(prev: CardProps, next: CardProps): boolean {
+  return (
+    prev.cardWidth === next.cardWidth &&
+    prev.card.rank === next.card.rank &&
+    prev.card.suit === next.card.suit &&
+    prev.card.isFaceUp === next.card.isFaceUp &&
+    prev.isHovered === next.isHovered &&
+    prev.isInteractive === next.isInteractive &&
+    prev.isDimmed === next.isDimmed
+  );
+}
+
+export const CardComponent = React.memo(CardComponentBase, areCardPropsEqual);
 
 const styles = StyleSheet.create({
   cardContainer: {
@@ -230,5 +244,8 @@ const styles = StyleSheet.create({
   },
   nonInteractiveCard: {
     opacity: 0.88,
+  },
+  dimmedCard: {
+    opacity: 0.35,
   },
 });
