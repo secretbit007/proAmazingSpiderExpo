@@ -503,31 +503,41 @@ export const GameBoard: React.FC = () => {
         startNextAnimation();
     }, [gameState]);
 
-    const handleDealCards = async () => {
-        if (!gameState || isSolving || isMovingCard) return;
+    const isBusy = loading || isStartingNewGame || isSolving || isMovingCard;
 
+    const handleDealCards = async () => {
+        if (!gameState || isBusy) return;
+
+        setIsMovingCard(true);
         try {
             const newState = await gameService.dealCards();
             setGameState(newState[0]);
             setActionError(null);
         } catch (err) {
             setActionError(actionErrorMessage(err, 'Deal failed. Please try again.'));
+        } finally {
+            setIsMovingCard(false);
         }
     };
 
     const handleUndo = async () => {
-        if (!gameState || isSolving || isMovingCard) return;
+        if (!gameState || isBusy) return;
 
+        setIsMovingCard(true);
         try {
             const newState = await gameService.undoMove();
             setGameState(newState[0]);
             setActionError(null);
         } catch (err) {
             setActionError(actionErrorMessage(err, 'Undo failed. Please try again.'));
+        } finally {
+            setIsMovingCard(false);
         }
     };
 
     const handleNewGame = async () => {
+        if (isStartingNewGame) return;
+
         try {
             solveRunIdRef.current += 1;
             moveRunIdRef.current += 1;
@@ -545,7 +555,7 @@ export const GameBoard: React.FC = () => {
     };
 
     const handleCardPress = async (pileIndex: number, cardIndex: number) => {
-        if (!gameState || isSolving || isMovingCard) return;
+        if (!gameState || isBusy) return;
 
         const runId = moveRunIdRef.current + 1;
         moveRunIdRef.current = runId;
@@ -587,7 +597,7 @@ export const GameBoard: React.FC = () => {
     };
 
     const handleSolve = async () => {
-        if (isSolving) return;
+        if (isBusy) return;
 
         const runId = solveRunIdRef.current + 1;
         solveRunIdRef.current = runId;
@@ -663,7 +673,7 @@ export const GameBoard: React.FC = () => {
     };
 
 
-    if (loading) {
+    if (loading || isStartingNewGame) {
         return (
             <View style={[styles.container, styles.center, styles.loadingScreen]}>
                 <ActivityIndicator size="large" color={COLORS.brassLight} />
@@ -852,11 +862,11 @@ export const GameBoard: React.FC = () => {
                 <View style={styles.actionBarFrame}>
                     <View style={styles.buttonBar}>
                     {([
-                        { key: 'new' as const, variant: 'new' as GameButtonVariant, icon: '＋', label: 'New', onPress: handleNewGame, disabled: loading || isStartingNewGame },
-                        { key: 'deal', variant: 'deal' as GameButtonVariant, icon: '▤', label: 'Deal', onPress: handleDealCards, disabled: isSolving || isMovingCard },
-                        { key: 'solve', variant: 'solve' as GameButtonVariant, icon: '★', label: isSolving ? 'Busy' : 'Solve', onPress: handleSolve, disabled: isSolving },
-                        { key: 'undo', variant: 'undo' as GameButtonVariant, icon: '↩', label: 'Undo', onPress: handleUndo, disabled: isSolving || isMovingCard },
-                        { key: 'help', variant: 'help' as GameButtonVariant, icon: 'i', label: 'Help', onPress: handleHelp, disabled: false },
+                        { key: 'new' as const, variant: 'new' as GameButtonVariant, icon: '＋', label: 'New', onPress: handleNewGame, disabled: isBusy },
+                        { key: 'deal', variant: 'deal' as GameButtonVariant, icon: '▤', label: 'Deal', onPress: handleDealCards, disabled: isBusy },
+                        { key: 'solve', variant: 'solve' as GameButtonVariant, icon: '★', label: isSolving ? 'Busy' : 'Solve', onPress: handleSolve, disabled: isBusy },
+                        { key: 'undo', variant: 'undo' as GameButtonVariant, icon: '↩', label: 'Undo', onPress: handleUndo, disabled: isBusy },
+                        { key: 'help', variant: 'help' as GameButtonVariant, icon: 'i', label: 'Help', onPress: handleHelp, disabled: isBusy },
                     ]).map((btn) => (
                         <View key={btn.key} style={styles.buttonWrapper}>
                             {activeTooltip === btn.key && (
