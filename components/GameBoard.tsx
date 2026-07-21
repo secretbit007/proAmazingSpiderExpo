@@ -797,8 +797,6 @@ export const GameBoard: React.FC = () => {
                 {/* Completed suit icons above button bar */}
                 {completedIcons.length > 0 && (
                     <View style={styles.completedTray}>
-                        <Text style={styles.completedTrayLabel}>REMOVED</Text>
-                        <View style={styles.completedIconsRow}>
                         {completedIcons.map(function (suit: string, index: number) {
                             return (
                                 <Animated.View key={index} style={[
@@ -855,7 +853,6 @@ export const GameBoard: React.FC = () => {
                                 </Animated.View>
                             );
                         })}
-                        </View>
                     </View>
                 )}
 
@@ -1333,33 +1330,22 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        flexWrap: 'nowrap',
         paddingVertical: 5,
-        paddingHorizontal: 12,
+        paddingHorizontal: 8,
         marginHorizontal: 10,
         marginBottom: 4,
         backgroundColor: COLORS.hudBg,
         borderRadius: 10,
         borderWidth: 2,
         borderColor: COLORS.brass,
-        gap: 10,
-    },
-    completedTrayLabel: {
-        color: COLORS.brassLight,
-        fontSize: 9,
-        fontWeight: '800',
-        letterSpacing: 1.2,
-    },
-    completedIconsRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
+        gap: 2,
     },
     completedIconWrapper: {
-        width: 32,
-        height: 32,
+        width: 30,
+        height: 30,
         justifyContent: 'center',
         alignItems: 'center',
-        marginHorizontal: 5,
     },
     completedIconImage: {
         width: 24,
@@ -1367,9 +1353,9 @@ const styles = StyleSheet.create({
     },
     iconGlow: {
         position: 'absolute',
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: 30,
+        height: 30,
+        borderRadius: 15,
     },
     iconSparkle: {
         position: 'absolute',
