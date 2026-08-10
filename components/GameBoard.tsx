@@ -2,14 +2,24 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, useWindowDimensions, View } from 'react-native';
 import { computeCardLayout, computeCardLayoutFromWidth } from '../constants/CardLayout';
 import { COLORS } from '../constants/Colors';
+import { DEFAULT_DIFFICULTY, clampDifficulty, difficultyLabel } from '../constants/Difficulty';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
 import { IMAGES, preloadImages } from '../utils/assets';
 import { warmCardFaceCache } from '../utils/cardFaceCache';
+import {
+    loadPreferredDifficulty,
+    recordGameStarted,
+    recordWin,
+    savePreferredDifficulty,
+} from '../utils/playerStats';
+import { computeScore, formatElapsed } from '../utils/score';
+import { DifficultyModal } from './DifficultyModal';
 import { GameButton, GameButtonVariant } from './GameButton';
 import { HelpModal } from './HelpModal';
 import { HudStat } from './HudStat';
 import { Pile, PileRef } from './Pile';
+import { StatsModal } from './StatsModal';
 import { StockPile } from './StockPile';
 
 const SPARKLE_COUNT = 8;
@@ -42,7 +52,7 @@ function actionErrorMessage(err: unknown, fallback: string): string {
 }
 
 const BUTTON_DESCRIPTIONS: Record<string, string> = {
-    new: 'Start a fresh game with current difficulty',
+    new: 'Pick difficulty and start a fresh game',
     deal: 'Deal 1 card to each pile from the stock',
     solve: 'Auto-solve the game showing all moves',
     undo: 'Undo the last move you made',
@@ -59,11 +69,19 @@ export const GameBoard: React.FC = () => {
     const [isMovingCard, setIsMovingCard] = useState<boolean>(false);
     const [hoveredCard, setHoveredCard] = useState<{ pileIndex: number; cardIndex: number } | null>(null);
     const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
+    const [showDifficultyModal, setShowDifficultyModal] = useState<boolean>(false);
+    const [showStatsModal, setShowStatsModal] = useState<boolean>(false);
+    const [difficulty, setDifficulty] = useState<number>(DEFAULT_DIFFICULTY);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const [timerRunning, setTimerRunning] = useState(false);
+    const [winScore, setWinScore] = useState<number | null>(null);
     const [expandedPileIndex, setExpandedPileIndex] = useState<number | null>(null);
     const pileRefs = useRef<(PileRef | null)[]>([]);
     const isMountedRef = useRef(true);
     const solveRunIdRef = useRef(0);
     const moveRunIdRef = useRef(0);
+    const winRecordedRef = useRef(false);
+    const difficultyRef = useRef(DEFAULT_DIFFICULTY);
 
     // Button tooltip state
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -153,17 +171,35 @@ export const GameBoard: React.FC = () => {
     ).current;
 
     useEffect(() => {
+        difficultyRef.current = difficulty;
+    }, [difficulty]);
+
+    useEffect(() => {
         const initGame = async () => {
             try {
                 setLoading(true);
                 await preloadImages();
-                const state = await gameService.startNewGame(0);
+                const preferred = await loadPreferredDifficulty();
+                if (!isMountedRef.current) return;
+                setDifficulty(preferred);
+                difficultyRef.current = preferred;
+                const state = await gameService.startNewGame(preferred);
+                if (!isMountedRef.current) return;
                 setGameState(state[0]);
+                setElapsedSeconds(0);
+                setTimerRunning(true);
+                winRecordedRef.current = false;
+                setWinScore(null);
+                void recordGameStarted();
                 setError(null);
             } catch (err) {
-                setError('Failed to initialize game');
+                if (isMountedRef.current) {
+                    setError('Failed to initialize game');
+                }
             } finally {
-                setLoading(false);
+                if (isMountedRef.current) {
+                    setLoading(false);
+                }
             }
         };
         initGame();
@@ -365,6 +401,7 @@ export const GameBoard: React.FC = () => {
     const showCongratsScreen = () => {
         showCongratsRef.current = true;
         setShowCongrats(true);
+        setTimerRunning(false);
 
         // Reset all congrats animated values
         congratsOpacity.setValue(0);
@@ -433,14 +470,37 @@ export const GameBoard: React.FC = () => {
         });
     };
 
-    // Dismiss congrats and start a new game
+    useEffect(() => {
+        if (!timerRunning || showCongratsRef.current) return;
+        const id = setInterval(() => {
+            if (showCongratsRef.current) return;
+            setElapsedSeconds((prev) => prev + 1);
+        }, 1000);
+        return () => clearInterval(id);
+    }, [timerRunning, showCongrats]);
+
+    // Dismiss congrats and open difficulty picker for next game
     const dismissCongratsAndNewGame = () => {
         showCongratsRef.current = false;
         Animated.timing(congratsOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(function () {
             setShowCongrats(false);
-            handleNewGame();
+            setShowDifficultyModal(true);
         });
     };
+
+    // Record win once when congrats appears (moves + elapsed at that moment)
+    useEffect(() => {
+        if (!showCongrats || !gameState || winRecordedRef.current) return;
+        winRecordedRef.current = true;
+        const score = computeScore(gameState.moves, elapsedSeconds);
+        setWinScore(score);
+        void recordWin({
+            moves: gameState.moves,
+            elapsedSeconds,
+            score,
+            difficulty: difficultyRef.current,
+        });
+    }, [showCongrats, gameState, elapsedSeconds]);
 
     // Detect newly completed sequences
     useEffect(function () {
@@ -535,8 +595,9 @@ export const GameBoard: React.FC = () => {
         }
     };
 
-    const handleNewGame = async () => {
+    const startGameWithDifficulty = async (nextDifficulty: number) => {
         if (isStartingNewGame) return;
+        const clamped = clampDifficulty(nextDifficulty);
 
         try {
             solveRunIdRef.current += 1;
@@ -545,13 +606,30 @@ export const GameBoard: React.FC = () => {
             setIsMovingCard(false);
             setIsStartingNewGame(true);
             setActionError(null);
-            const newState = await gameService.startNewGame(0);
+            setDifficulty(clamped);
+            difficultyRef.current = clamped;
+            await savePreferredDifficulty(clamped);
+            const newState = await gameService.startNewGame(clamped);
             setGameState(newState[0]);
+            setElapsedSeconds(0);
+            setTimerRunning(true);
+            winRecordedRef.current = false;
+            setWinScore(null);
+            void recordGameStarted();
         } catch (err) {
             setActionError(actionErrorMessage(err, 'Failed to start a new game.'));
         } finally {
             setIsStartingNewGame(false);
         }
+    };
+
+    const handleNewGame = () => {
+        if (isBusy) return;
+        setShowDifficultyModal(true);
+    };
+
+    const handleDifficultySelect = (selected: number) => {
+        void startGameWithDifficulty(selected);
     };
 
     const handleCardPress = async (pileIndex: number, cardIndex: number) => {
@@ -685,10 +763,21 @@ export const GameBoard: React.FC = () => {
     const handleRetry = async () => {
         try {
             setError(null);
-            const state = await gameService.startNewGame(1);
+            setLoading(true);
+            const preferred = await loadPreferredDifficulty();
+            setDifficulty(preferred);
+            difficultyRef.current = preferred;
+            const state = await gameService.startNewGame(preferred);
             setGameState(state[0]);
+            setElapsedSeconds(0);
+            setTimerRunning(true);
+            winRecordedRef.current = false;
+            setWinScore(null);
+            void recordGameStarted();
         } catch (err) {
             setError('Failed to load game. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -737,6 +826,8 @@ export const GameBoard: React.FC = () => {
                     <View style={styles.hudInner}>
                         <HudStat label="MOVES" value={gameState.moves} accent />
                         <View style={styles.hudDivider} />
+                        <HudStat label="TIME" value={formatElapsed(elapsedSeconds)} accent />
+                        <View style={styles.hudDivider} />
                         <View style={styles.hudStock}>
                             <Text style={styles.hudStockLabel}>STOCK</Text>
                             <StockPile drawsRemaining={gameState.drawsRemaining} />
@@ -748,6 +839,23 @@ export const GameBoard: React.FC = () => {
                             suffix="/8"
                             accent={gameState.completedSequences > 0}
                         />
+                    </View>
+                    <View style={styles.hudMetaRow}>
+                        <TouchableOpacity
+                            onPress={() => !isBusy && setShowDifficultyModal(true)}
+                            disabled={isBusy}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                            <Text style={styles.hudMetaText}>
+                                {difficultyLabel(difficulty)} · {difficulty}/9
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => setShowStatsModal(true)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                            <Text style={styles.hudMetaLink}>Stats</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
@@ -964,6 +1072,18 @@ export const GameBoard: React.FC = () => {
                     onClose={() => setShowHelpModal(false)}
                 />
 
+                <DifficultyModal
+                    visible={showDifficultyModal}
+                    onClose={() => setShowDifficultyModal(false)}
+                    onDifficultySelect={handleDifficultySelect}
+                    currentDifficulty={difficulty}
+                />
+
+                <StatsModal
+                    visible={showStatsModal}
+                    onClose={() => setShowStatsModal(false)}
+                />
+
                 {/* Congratulations overlay */}
                 {showCongrats && (
                     <Animated.View style={[styles.congratsOverlay, { opacity: congratsOpacity }]}>
@@ -994,13 +1114,18 @@ export const GameBoard: React.FC = () => {
                             Congratulations!
                         </Animated.Text>
 
-                        {/* Moves count */}
-                        <Animated.Text style={[
-                            styles.congratsMoves,
-                            { opacity: congratsMovesOpacity },
-                        ]}>
-                            Completed in {gameState.moves} moves
-                        </Animated.Text>
+                        {/* Moves / time / score */}
+                        <Animated.View style={[styles.congratsStatsBlock, { opacity: congratsMovesOpacity }]}>
+                            <Text style={styles.congratsMoves}>
+                                {gameState.moves} moves · {formatElapsed(elapsedSeconds)}
+                            </Text>
+                            <Text style={styles.congratsScore}>
+                                Score {winScore != null ? winScore : computeScore(gameState.moves, elapsedSeconds)}
+                            </Text>
+                            <Text style={styles.congratsDiff}>
+                                {difficultyLabel(difficulty)}
+                            </Text>
+                        </Animated.View>
 
                         {/* Suit icons row */}
                         <View style={styles.congratsSuitsRow}>
@@ -1102,6 +1227,27 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         letterSpacing: 1,
         marginBottom: 1,
+    },
+    hudMetaRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingTop: 4,
+        paddingBottom: 2,
+    },
+    hudMetaText: {
+        color: COLORS.brassLight,
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 0.3,
+    },
+    hudMetaLink: {
+        color: COLORS.textGold,
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 0.6,
+        textDecorationLine: 'underline',
     },
 
     // ── Table play area ─────────────────────────────
@@ -1390,10 +1536,26 @@ const styles = StyleSheet.create({
     },
     congratsMoves: {
         color: COLORS.textSecondary,
-        fontSize: 18,
+        fontSize: 17,
         textAlign: 'center',
-        marginBottom: 30,
         fontWeight: '500',
+    },
+    congratsStatsBlock: {
+        alignItems: 'center',
+        marginBottom: 28,
+    },
+    congratsScore: {
+        color: COLORS.textGold,
+        fontSize: 22,
+        fontWeight: '800',
+        marginTop: 8,
+        letterSpacing: 0.5,
+    },
+    congratsDiff: {
+        color: COLORS.textMuted,
+        fontSize: 13,
+        fontWeight: '600',
+        marginTop: 6,
     },
     congratsSuitsRow: {
         flexDirection: 'row',

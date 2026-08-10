@@ -1,6 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Keyboard, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { COLORS } from '../constants/Colors';
+import {
+  DIFFICULTY_LABELS,
+  MAX_DIFFICULTY,
+  MIN_DIFFICULTY,
+  clampDifficulty,
+  difficultyLabel,
+} from '../constants/Difficulty';
 
 interface DifficultyModalProps {
   visible: boolean;
@@ -9,39 +16,32 @@ interface DifficultyModalProps {
   currentDifficulty: number;
 }
 
-const DIFFICULTY_LABELS: Record<number, string> = {
-  0: 'Beginner',
-  1: 'Novice',
-  2: 'Easy',
-  3: 'Normal',
-  4: 'Medium',
-  5: 'Tricky',
-  6: 'Hard',
-  7: 'Expert',
-  8: 'Master',
-  9: 'Legendary',
-};
-
 export const DifficultyModal: React.FC<DifficultyModalProps> = ({
   visible,
   onClose,
   onDifficultySelect,
   currentDifficulty,
 }) => {
-  const [inputValue, setInputValue] = useState<string>(currentDifficulty.toString());
+  const [inputValue, setInputValue] = useState<string>(String(currentDifficulty));
   const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    if (!visible) return;
+    setInputValue(String(clampDifficulty(currentDifficulty)));
+    setError('');
+  }, [visible, currentDifficulty]);
 
   if (!visible) return null;
 
   const handleSubmit = () => {
     Keyboard.dismiss();
-    const num = parseInt(inputValue);
-    if (isNaN(num)) {
+    const num = parseInt(inputValue, 10);
+    if (Number.isNaN(num)) {
       setError('Please enter a valid number');
       return;
     }
-    if (num < 0 || num > 9) {
-      setError('Difficulty must be between 0 and 9');
+    if (num < MIN_DIFFICULTY || num > MAX_DIFFICULTY) {
+      setError(`Difficulty must be between ${MIN_DIFFICULTY} and ${MAX_DIFFICULTY}`);
       return;
     }
     setError('');
@@ -49,13 +49,14 @@ export const DifficultyModal: React.FC<DifficultyModalProps> = ({
     onClose();
   };
 
-  const diffLabel = DIFFICULTY_LABELS[parseInt(inputValue)] || '';
+  const parsed = parseInt(inputValue, 10);
+  const diffLabel = Number.isNaN(parsed) ? '' : DIFFICULTY_LABELS[parsed] || '';
 
   return (
     <View style={styles.modalOverlay}>
       <View style={styles.modalContainer}>
         <Text style={styles.modalTitle}>Difficulty</Text>
-        <Text style={styles.modalSubtitle}>Choose your challenge level</Text>
+        <Text style={styles.modalSubtitle}>Choose your challenge level (0 easy → 9 hard)</Text>
 
         <View style={styles.inputContainer}>
           <TextInput
@@ -64,20 +65,41 @@ export const DifficultyModal: React.FC<DifficultyModalProps> = ({
             value={inputValue}
             onChangeText={(text) => setInputValue(text.replace(/[^0-9]/g, ''))}
             maxLength={1}
-            autoFocus={true}
+            autoFocus
             onSubmitEditing={handleSubmit}
             placeholderTextColor="rgba(255,255,255,0.3)"
           />
-          {diffLabel ? (
-            <Text style={styles.diffLabel}>{diffLabel}</Text>
-          ) : null}
+          {diffLabel ? <Text style={styles.diffLabel}>{diffLabel}</Text> : null}
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        </View>
+
+        <View style={styles.chipRow}>
+          {[0, 3, 6, 9].map((level) => (
+            <TouchableOpacity
+              key={level}
+              style={[styles.chip, parsed === level && styles.chipActive]}
+              onPress={() => {
+                setInputValue(String(level));
+                setError('');
+              }}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.chipText, parsed === level && styles.chipTextActive]}>
+                {DIFFICULTY_LABELS[level]}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         <View style={styles.scaleRow}>
           <Text style={styles.scaleText}>0</Text>
           <View style={styles.scaleBar}>
-            <View style={[styles.scaleFill, { width: `${(parseInt(inputValue) || 0) / 9 * 100}%` }]} />
+            <View
+              style={[
+                styles.scaleFill,
+                { width: `${((Number.isNaN(parsed) ? 0 : parsed) / MAX_DIFFICULTY) * 100}%` },
+              ]}
+            />
           </View>
           <Text style={styles.scaleText}>9</Text>
         </View>
@@ -101,7 +123,7 @@ export const DifficultyModal: React.FC<DifficultyModalProps> = ({
         </View>
 
         <Text style={styles.currentText}>
-          Current: {currentDifficulty} ({DIFFICULTY_LABELS[currentDifficulty]})
+          Current: {clampDifficulty(currentDifficulty)} ({difficultyLabel(currentDifficulty)})
         </Text>
       </View>
     </View>
@@ -115,19 +137,20 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.78)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000,
+    zIndex: 25000,
+    elevation: 400,
   },
   modalContainer: {
     width: Platform.OS === 'web' ? '40%' : '80%',
     maxWidth: 360,
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
-    padding: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: COLORS.woodDark,
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 2,
+    borderColor: COLORS.brass,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.5,
@@ -135,7 +158,7 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   modalTitle: {
-    color: COLORS.textPrimary,
+    color: COLORS.textGold,
     fontSize: 24,
     fontWeight: '800',
     textAlign: 'center',
@@ -143,19 +166,19 @@ const styles = StyleSheet.create({
   },
   modalSubtitle: {
     color: COLORS.textMuted,
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
     marginTop: 4,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 14,
     alignItems: 'center',
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: COLORS.hudBg,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: COLORS.brass,
     width: 64,
     height: 64,
     borderRadius: 16,
@@ -165,7 +188,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   diffLabel: {
-    color: COLORS.selectionBlue,
+    color: COLORS.brassLight,
     fontSize: 15,
     fontWeight: '600',
     marginTop: 8,
@@ -176,10 +199,37 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 6,
   },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 16,
+  },
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 162, 39, 0.35)',
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  chipActive: {
+    borderColor: COLORS.brassLight,
+    backgroundColor: 'rgba(201, 162, 39, 0.2)',
+  },
+  chipText: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  chipTextActive: {
+    color: COLORS.textGold,
+  },
   scaleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 22,
     paddingHorizontal: 4,
   },
   scaleText: {
@@ -199,7 +249,7 @@ const styles = StyleSheet.create({
   },
   scaleFill: {
     height: '100%',
-    backgroundColor: COLORS.selectionBlue,
+    backgroundColor: COLORS.brass,
     borderRadius: 2,
   },
   buttonContainer: {
@@ -219,7 +269,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   submitButton: {
-    backgroundColor: COLORS.buttonPrimary,
+    backgroundColor: COLORS.buttonNew,
+    borderWidth: 1.5,
+    borderColor: COLORS.brass,
   },
   cancelButtonText: {
     color: COLORS.textSecondary,
