@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ACHIEVEMENTS, AchievementId } from '../constants/Achievements';
 import { COLORS } from '../constants/Colors';
+import { loadUnlockedAchievements, UnlockedMap } from '../utils/achievements';
 import { formatElapsed } from '../utils/score';
 import { loadPlayerStats, PlayerStats } from '../utils/playerStats';
 
@@ -18,14 +20,38 @@ function StatRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function AchievementRow({
+  title,
+  description,
+  unlocked,
+}: {
+  title: string;
+  description: string;
+  unlocked: boolean;
+}) {
+  return (
+    <View style={[styles.badge, unlocked ? styles.badgeOn : styles.badgeOff]}>
+      <Text style={[styles.badgeTitle, unlocked && styles.badgeTitleOn]}>
+        {unlocked ? '★ ' : '☆ '}
+        {title}
+      </Text>
+      <Text style={styles.badgeDesc}>{description}</Text>
+    </View>
+  );
+}
+
 export const StatsModal: React.FC<StatsModalProps> = ({ visible, onClose }) => {
   const [stats, setStats] = useState<PlayerStats | null>(null);
+  const [unlocked, setUnlocked] = useState<UnlockedMap>({});
 
   useEffect(() => {
     if (!visible) return;
     let cancelled = false;
-    loadPlayerStats().then((s) => {
-      if (!cancelled) setStats(s);
+    Promise.all([loadPlayerStats(), loadUnlockedAchievements()]).then(([s, a]) => {
+      if (!cancelled) {
+        setStats(s);
+        setUnlocked(a);
+      }
     });
     return () => {
       cancelled = true;
@@ -67,7 +93,25 @@ export const StatsModal: React.FC<StatsModalProps> = ({ visible, onClose }) => {
                   value={stats.bestScore != null ? String(stats.bestScore) : '—'}
                 />
                 <StatRow label="Win streak" value={String(stats.currentStreak)} />
-                <StatRow label="Best streak" value={String(stats.bestStreak)} />
+                <StatRow label="Best win streak" value={String(stats.bestStreak)} />
+                <StatRow
+                  label="Daily streak"
+                  value={String(stats.dailyCurrentStreak ?? 0)}
+                />
+                <StatRow
+                  label="Best daily streak"
+                  value={String(stats.dailyBestStreak ?? 0)}
+                />
+
+                <Text style={styles.section}>Achievements</Text>
+                {ACHIEVEMENTS.map((item) => (
+                  <AchievementRow
+                    key={item.id}
+                    title={item.title}
+                    description={item.description}
+                    unlocked={Boolean(unlocked[item.id as AchievementId])}
+                  />
+                ))}
               </>
             ) : (
               <Text style={styles.loading}>Loading…</Text>
@@ -114,7 +158,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   list: {
-    maxHeight: 320,
+    maxHeight: 360,
   },
   row: {
     flexDirection: 'row',
@@ -133,6 +177,41 @@ const styles = StyleSheet.create({
     color: COLORS.textGold,
     fontSize: 15,
     fontWeight: '800',
+  },
+  section: {
+    color: COLORS.brassLight,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  badge: {
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 10,
+    marginBottom: 8,
+  },
+  badgeOn: {
+    borderColor: COLORS.brassLight,
+    backgroundColor: 'rgba(201, 162, 39, 0.16)',
+  },
+  badgeOff: {
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  badgeTitle: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  badgeTitleOn: {
+    color: COLORS.textGold,
+  },
+  badgeDesc: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    marginTop: 3,
   },
   loading: {
     color: COLORS.textMuted,

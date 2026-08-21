@@ -16,6 +16,9 @@ export interface PlayerStats {
   bestStreak: number;
   /** YYYY-MM-DD of last recorded win (for streak). */
   lastWinDate: string | null;
+  dailyCurrentStreak: number;
+  dailyBestStreak: number;
+  lastDailyWinDate: string | null;
 }
 
 export interface WinRecord {
@@ -35,9 +38,12 @@ const EMPTY_STATS: PlayerStats = {
   currentStreak: 0,
   bestStreak: 0,
   lastWinDate: null,
+  dailyCurrentStreak: 0,
+  dailyBestStreak: 0,
+  lastDailyWinDate: null,
 };
 
-function todayKey(date = new Date()): string {
+export function todayKey(date = new Date()): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
@@ -145,6 +151,22 @@ export async function recordWin(win: WinRecord): Promise<PlayerStats> {
   const bestScore =
     stats.bestScore == null ? win.score : Math.max(stats.bestScore, win.score);
 
+  let dailyCurrentStreak = stats.dailyCurrentStreak ?? 0;
+  let dailyBestStreak = stats.dailyBestStreak ?? 0;
+  let lastDailyWinDate = stats.lastDailyWinDate ?? null;
+
+  if (win.isDaily) {
+    if (lastDailyWinDate === today) {
+      // Already won today's daily.
+    } else if (lastDailyWinDate && daysBetween(lastDailyWinDate, today) === 1) {
+      dailyCurrentStreak += 1;
+    } else {
+      dailyCurrentStreak = 1;
+    }
+    dailyBestStreak = Math.max(dailyBestStreak, dailyCurrentStreak);
+    lastDailyWinDate = today;
+  }
+
   const next: PlayerStats = {
     ...stats,
     gamesWon: stats.gamesWon + 1,
@@ -154,6 +176,9 @@ export async function recordWin(win: WinRecord): Promise<PlayerStats> {
     currentStreak,
     bestStreak,
     lastWinDate: today,
+    dailyCurrentStreak,
+    dailyBestStreak,
+    lastDailyWinDate,
   };
   await savePlayerStats(next);
   if (win.isDaily) {

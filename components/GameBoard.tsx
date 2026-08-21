@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, useWindowDimensions, View } from 'react-native';
 import { computeCardLayout, computeCardLayoutFromWidth } from '../constants/CardLayout';
 import { COLORS } from '../constants/Colors';
+import { AchievementId } from '../constants/Achievements';
 import { DEFAULT_DIFFICULTY, DEFAULT_SUIT_COUNT, SUIT_COUNT_LABELS, SuitCount, clampDifficulty, clampSuitCount, difficultyLabel } from '../constants/Difficulty';
 import { CardBackId, DEFAULT_CARD_BACK, DEFAULT_TABLE_THEME, TABLE_THEMES, TableThemeId } from '../constants/Themes';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
+import { achievementTitle, unlockAchievementsForWin } from '../utils/achievements';
 import {
     loadCardBack,
     loadSoundEnabled,
@@ -18,6 +20,7 @@ import { IMAGES, preloadImages } from '../utils/assets';
 import { warmCardFaceCache } from '../utils/cardFaceCache';
 import {
     loadLastDailyWinDate,
+    loadPlayerStats,
     loadPreferredDifficulty,
     loadPreferredSuitCount,
     recordGameStarted,
@@ -26,6 +29,7 @@ import {
     savePreferredSuitCount,
 } from '../utils/playerStats';
 import { computeScore, formatElapsed } from '../utils/score';
+import { buildWinShareText, shareWin } from '../utils/shareWin';
 import { initSounds, playSound, setSoundEnabled } from '../utils/sound';
 import { DifficultyModal } from './DifficultyModal';
 import { GameButton, GameButtonVariant } from './GameButton';
@@ -35,6 +39,7 @@ import { Pile, PileRef } from './Pile';
 import { StatsModal } from './StatsModal';
 import { StockPile } from './StockPile';
 import { ThemeModal } from './ThemeModal';
+import ViewShot, { ViewShotRef } from 'react-native-view-shot';
 
 const SPARKLE_COUNT = 8;
 const SUIT_IMAGE_MAP: Record<string, any> = {
@@ -99,6 +104,9 @@ export const GameBoard: React.FC = () => {
     const [suitCount, setSuitCount] = useState<SuitCount>(DEFAULT_SUIT_COUNT);
     const [isDailyGame, setIsDailyGame] = useState(false);
     const [dailyCompleted, setDailyCompleted] = useState(false);
+    const [dailyStreak, setDailyStreak] = useState(0);
+    const [newAchievements, setNewAchievements] = useState<AchievementId[]>([]);
+    const [sharing, setSharing] = useState(false);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
     const [timerRunning, setTimerRunning] = useState(false);
     const [winScore, setWinScore] = useState<number | null>(null);
@@ -111,6 +119,8 @@ export const GameBoard: React.FC = () => {
     const winRecordedRef = useRef(false);
     const difficultyRef = useRef(DEFAULT_DIFFICULTY);
     const isDailyRef = useRef(false);
+    const usedUndoRef = useRef(false);
+    const shareShotRef = useRef<ViewShotRef>(null);
 
     // Button tooltip state
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -209,13 +219,14 @@ export const GameBoard: React.FC = () => {
                 setLoading(true);
                 await preloadImages();
                 await initSounds();
-                const [preferred, preferredSuits, lastDailyWin, savedTable, savedBack, savedSound] = await Promise.all([
+                const [preferred, preferredSuits, lastDailyWin, savedTable, savedBack, savedSound, stats] = await Promise.all([
                     loadPreferredDifficulty(),
                     loadPreferredSuitCount(),
                     loadLastDailyWinDate(),
                     loadTableTheme(),
                     loadCardBack(),
                     loadSoundEnabled(),
+                    loadPlayerStats(),
                 ]);
                 if (!isMountedRef.current) return;
                 setTableTheme(savedTable);
@@ -226,6 +237,7 @@ export const GameBoard: React.FC = () => {
                 difficultyRef.current = preferred;
                 setSuitCount(preferredSuits);
                 setDailyCompleted(lastDailyWin === new Date().toISOString().slice(0, 10));
+                setDailyStreak(stats.dailyCurrentStreak ?? 0);
                 const state = await gameService.startNewGame(preferred, { suitCount: preferredSuits });
                 if (!isMountedRef.current) return;
                 setGameState(state[0]);
@@ -236,6 +248,8 @@ export const GameBoard: React.FC = () => {
                 setIsDailyGame(false);
                 isDailyRef.current = false;
                 setHintedCard(null);
+                usedUndoRef.current = false;
+                setNewAchievements([]);
                 void recordGameStarted();
                 setError(null);
             } catch (err) {
@@ -540,13 +554,25 @@ export const GameBoard: React.FC = () => {
         winRecordedRef.current = true;
         const score = computeScore(gameState.moves, elapsedSeconds);
         setWinScore(score);
-        void recordWin({
-            moves: gameState.moves,
-            elapsedSeconds,
-            score,
-            difficulty: difficultyRef.current,
-            isDaily: isDailyRef.current,
-        });
+        void (async () => {
+            const stats = await recordWin({
+                moves: gameState.moves,
+                elapsedSeconds,
+                score,
+                difficulty: difficultyRef.current,
+                isDaily: isDailyRef.current,
+            });
+            setDailyStreak(stats.dailyCurrentStreak ?? 0);
+            const unlocked = await unlockAchievementsForWin({
+                isDaily: isDailyRef.current,
+                dailyStreak: stats.dailyCurrentStreak ?? 0,
+                difficulty: difficultyRef.current,
+                usedUndo: usedUndoRef.current,
+            });
+            if (isMountedRef.current) {
+                setNewAchievements(unlocked);
+            }
+        })();
         if (isDailyRef.current) {
             setDailyCompleted(true);
         }
@@ -638,6 +664,7 @@ export const GameBoard: React.FC = () => {
         setIsMovingCard(true);
         try {
             const newState = await gameService.undoMove();
+            usedUndoRef.current = true;
             setGameState(newState[0]);
             setActionError(null);
         } catch (err) {
@@ -664,6 +691,8 @@ export const GameBoard: React.FC = () => {
             setIsStartingNewGame(true);
             setActionError(null);
             setHintedCard(null);
+            usedUndoRef.current = false;
+            setNewAchievements([]);
             setDifficulty(clamped);
             difficultyRef.current = clamped;
             setSuitCount(suits);
@@ -820,6 +849,32 @@ export const GameBoard: React.FC = () => {
         void saveSoundEnabled(next);
     };
 
+    const handleShareWin = async () => {
+        if (!gameState || sharing) return;
+        setSharing(true);
+        const score = winScore != null ? winScore : computeScore(gameState.moves, elapsedSeconds);
+        const message = buildWinShareText({
+            moves: gameState.moves,
+            time: formatElapsed(elapsedSeconds),
+            score,
+            label: `${difficultyLabel(difficulty)} · ${SUIT_COUNT_LABELS[suitCount]}`,
+            isDaily: isDailyGame,
+        });
+        let imageUri: string | null = null;
+        try {
+            imageUri = (await shareShotRef.current?.capture?.()) ?? null;
+        } catch {
+            imageUri = null;
+        }
+        try {
+            await shareWin({ message, imageUri });
+        } catch {
+            setActionError('Could not open the share sheet.');
+        } finally {
+            setSharing(false);
+        }
+    };
+
     const activeTable = TABLE_THEMES[tableTheme];
 
     const showTooltip = (key: string) => {
@@ -892,6 +947,7 @@ export const GameBoard: React.FC = () => {
             setIsDailyGame(false);
             isDailyRef.current = false;
             setHintedCard(null);
+            usedUndoRef.current = false;
             const state = await gameService.startNewGame(preferred, { suitCount: preferredSuits });
             setGameState(state[0]);
             setElapsedSeconds(0);
@@ -976,6 +1032,7 @@ export const GameBoard: React.FC = () => {
                         >
                             <Text style={styles.hudMetaText}>
                                 {isDailyGame ? 'Daily · ' : ''}{difficultyLabel(difficulty)} · {SUIT_COUNT_LABELS[suitCount]}
+                                {dailyStreak > 0 ? ` · 🔥 ${dailyStreak}` : ''}
                             </Text>
                         </TouchableOpacity>
                         <View style={styles.hudMetaLinks}>
@@ -1276,17 +1333,35 @@ export const GameBoard: React.FC = () => {
                         </Animated.Text>
 
                         {/* Moves / time / score */}
-                        <Animated.View style={[styles.congratsStatsBlock, { opacity: congratsMovesOpacity }]}>
-                            <Text style={styles.congratsMoves}>
-                                {gameState.moves} moves · {formatElapsed(elapsedSeconds)}
-                            </Text>
-                            <Text style={styles.congratsScore}>
-                                Score {winScore != null ? winScore : computeScore(gameState.moves, elapsedSeconds)}
-                            </Text>
-                            <Text style={styles.congratsDiff}>
-                                {isDailyGame ? 'Daily · ' : ''}{difficultyLabel(difficulty)} · {SUIT_COUNT_LABELS[suitCount]}
-                            </Text>
-                        </Animated.View>
+                        <ViewShot
+                            ref={shareShotRef}
+                            options={{ format: 'png', quality: 0.92, result: 'tmpfile' }}
+                            style={styles.shareCard}
+                        >
+                            <Text style={styles.shareCardBrand}>proAmazingSpider</Text>
+                            <Animated.View style={[styles.congratsStatsBlock, { opacity: congratsMovesOpacity }]}>
+                                <Text style={styles.congratsMoves}>
+                                    {gameState.moves} moves · {formatElapsed(elapsedSeconds)}
+                                </Text>
+                                <Text style={styles.congratsScore}>
+                                    Score {winScore != null ? winScore : computeScore(gameState.moves, elapsedSeconds)}
+                                </Text>
+                                <Text style={styles.congratsDiff}>
+                                    {isDailyGame ? 'Daily · ' : ''}{difficultyLabel(difficulty)} · {SUIT_COUNT_LABELS[suitCount]}
+                                    {isDailyGame && dailyStreak > 0 ? ` · 🔥 ${dailyStreak}` : ''}
+                                </Text>
+                            </Animated.View>
+                        </ViewShot>
+
+                        {newAchievements.length > 0 ? (
+                            <View style={styles.unlockRow}>
+                                {newAchievements.map((id) => (
+                                    <Text key={id} style={styles.unlockText}>
+                                        ★ {achievementTitle(id)}
+                                    </Text>
+                                ))}
+                            </View>
+                        ) : null}
 
                         {/* Suit icons row */}
                         <View style={styles.congratsSuitsRow}>
@@ -1305,8 +1380,11 @@ export const GameBoard: React.FC = () => {
                             })}
                         </View>
 
-                        {/* New Game button */}
-                        <Animated.View style={{ opacity: congratsButtonOpacity }}>
+                        {/* New Game / Share buttons */}
+                        <Animated.View style={[styles.congratsActions, { opacity: congratsButtonOpacity }]}>
+                            <TouchableOpacity style={styles.congratsShareButton} onPress={() => { void handleShareWin(); }} disabled={sharing}>
+                                <Text style={styles.congratsShareButtonText}>{sharing ? 'Sharing…' : 'Share'}</Text>
+                            </TouchableOpacity>
                             <TouchableOpacity style={styles.congratsButton} onPress={dismissCongratsAndNewGame}>
                                 <Text style={styles.congratsButtonText}>New Game</Text>
                             </TouchableOpacity>
@@ -1708,7 +1786,7 @@ const styles = StyleSheet.create({
     },
     congratsStatsBlock: {
         alignItems: 'center',
-        marginBottom: 28,
+        marginBottom: 8,
     },
     congratsScore: {
         color: COLORS.textGold,
@@ -1727,7 +1805,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 40,
+        marginBottom: 28,
+        marginTop: 16,
     },
     congratsSuitWrapper: {
         width: 60,
@@ -1742,7 +1821,7 @@ const styles = StyleSheet.create({
     },
     congratsButton: {
         backgroundColor: COLORS.gold,
-        paddingHorizontal: 40,
+        paddingHorizontal: 28,
         paddingVertical: 14,
         borderRadius: 24,
         shadowColor: COLORS.gold,
@@ -1750,6 +1829,53 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.4,
         shadowRadius: 12,
         elevation: 8,
+    },
+    congratsActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    congratsShareButton: {
+        backgroundColor: 'transparent',
+        paddingHorizontal: 24,
+        paddingVertical: 13,
+        borderRadius: 24,
+        borderWidth: 2,
+        borderColor: COLORS.gold,
+    },
+    congratsShareButtonText: {
+        color: COLORS.textGold,
+        fontWeight: '800',
+        fontSize: 16,
+        letterSpacing: 0.4,
+    },
+    shareCard: {
+        alignItems: 'center',
+        backgroundColor: '#140c08',
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: COLORS.brass,
+        paddingHorizontal: 28,
+        paddingTop: 16,
+        paddingBottom: 14,
+        minWidth: 260,
+    },
+    shareCardBrand: {
+        color: COLORS.brassLight,
+        fontSize: 12,
+        fontWeight: '800',
+        letterSpacing: 1.2,
+        marginBottom: 6,
+    },
+    unlockRow: {
+        alignItems: 'center',
+        marginBottom: 8,
+        gap: 4,
+    },
+    unlockText: {
+        color: COLORS.textGold,
+        fontSize: 13,
+        fontWeight: '700',
     },
     congratsButtonText: {
         color: '#1a1a1a',
