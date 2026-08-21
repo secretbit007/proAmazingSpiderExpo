@@ -6,9 +6,14 @@ import { IMAGES } from '../utils/assets';
 interface StockPileProps {
   drawsRemaining: number;
   maxDraws?: number;
+  cardBackSource?: number;
 }
 
-export const StockPile: React.FC<StockPileProps> = ({ drawsRemaining, maxDraws = 5 }) => {
+export const StockPile: React.FC<StockPileProps> = ({
+  drawsRemaining,
+  maxDraws = 5,
+  cardBackSource = IMAGES.card_back,
+}) => {
   const stackDepth = Math.min(drawsRemaining, 4);
 
   return (
@@ -29,7 +34,7 @@ export const StockPile: React.FC<StockPileProps> = ({ drawsRemaining, maxDraws =
                   },
                 ]}
               >
-                <Image source={IMAGES.card_back} style={styles.cardImage} />
+                <Image source={cardBackSource} style={styles.cardImage} />
                 <View style={styles.cardShine} />
               </View>
             ))}

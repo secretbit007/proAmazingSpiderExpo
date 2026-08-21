@@ -3,6 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { CARD_ASPECT_RATIO } from '../constants/CardLayout';
 import { COLORS } from '../constants/Colors';
 import { Card } from '../types/gameTypes';
+import { CardBackId } from '../constants/Themes';
 import { CardFaceMetrics, CardFaceVisual, getCardFaceMetrics, getCardFaceVisual } from '../utils/cardFaceCache';
 import { IMAGES } from '../utils/assets';
 
@@ -13,7 +14,14 @@ interface CardProps {
   isHinted?: boolean;
   isInteractive?: boolean;
   isDimmed?: boolean;
+  cardBackId?: CardBackId;
 }
+
+const CARD_BACK_IMAGES: Record<CardBackId, number> = {
+  classic: IMAGES.card_back,
+  navy: IMAGES.card_back_navy,
+  crimson: IMAGES.card_back_crimson,
+};
 
 interface FaceUpCardFaceProps {
   visual: CardFaceVisual;
@@ -88,10 +96,10 @@ const FaceUpCardFace = React.memo(function FaceUpCardFace({ visual, metrics }: F
   );
 });
 
-const CardBack = React.memo(function CardBack() {
+const CardBack = React.memo(function CardBack({ cardBackId = 'classic' }: { cardBackId?: CardBackId }) {
   return (
     <View style={styles.cardBackContainer}>
-      <Image source={IMAGES.card_back} style={styles.cardBackImage} />
+      <Image source={CARD_BACK_IMAGES[cardBackId]} style={styles.cardBackImage} />
       <View style={styles.cardBackOverlay} />
     </View>
   );
@@ -104,6 +112,7 @@ function CardComponentBase({
   isHinted = false,
   isInteractive = true,
   isDimmed = false,
+  cardBackId = 'classic',
 }: CardProps) {
   const metrics = getCardFaceMetrics(cardWidth);
   const visual = card.isFaceUp ? getCardFaceVisual(card.rank, card.suit) : null;
@@ -118,7 +127,7 @@ function CardComponentBase({
         isDimmed && styles.dimmedCard,
       ]}
     >
-      {visual ? <FaceUpCardFace visual={visual} metrics={metrics} /> : <CardBack />}
+      {visual ? <FaceUpCardFace visual={visual} metrics={metrics} /> : <CardBack cardBackId={cardBackId} />}
     </View>
   );
 }
@@ -132,7 +141,8 @@ function areCardPropsEqual(prev: CardProps, next: CardProps): boolean {
     prev.isHovered === next.isHovered &&
     prev.isHinted === next.isHinted &&
     prev.isInteractive === next.isInteractive &&
-    prev.isDimmed === next.isDimmed
+    prev.isDimmed === next.isDimmed &&
+    prev.cardBackId === next.cardBackId
   );
 }
 

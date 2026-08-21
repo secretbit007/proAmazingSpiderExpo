@@ -6,6 +6,8 @@ export const IMAGES = {
     clubs: require('../assets/images/club.png'),
     spades: require('../assets/images/spade.png'),
     card_back: require('../assets/images/card-back.jpg'),
+    card_back_navy: require('../assets/images/card-back-navy.png'),
+    card_back_crimson: require('../assets/images/card-back-crimson.png'),
     background: require('../assets/images/background.jpg'),
     background_logo: require('../assets/images/background-logo.png')
 };

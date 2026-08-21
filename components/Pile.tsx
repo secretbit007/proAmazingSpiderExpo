@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { CARD_ASPECT_RATIO, cardHeightForWidth } from '../constants/CardLayout';
 import { COLORS } from '../constants/Colors';
 import { Card } from '../types/gameTypes';
+import { CardBackId } from '../constants/Themes';
 import { CardComponent } from './Card';
 
 interface PileProps {
@@ -12,6 +13,9 @@ interface PileProps {
   columnHeight: number;
   hoveredCard: { pileIndex: number; cardIndex: number } | null;
   hintedCard?: { pileIndex: number; cardIndex: number } | null;
+  cardBackId?: CardBackId;
+  emptySlotColor?: string;
+  emptySlotBorder?: string;
   onCardPress?: (pileIndex: number, cardIndex: number) => void;
   onCardHover?: (pileIndex: number, cardIndex: number, isHovered: boolean) => void;
   onExpansionChange?: (pileIndex: number | null) => void;
@@ -148,6 +152,9 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
   columnHeight,
   hoveredCard,
   hintedCard = null,
+  cardBackId = 'classic',
+  emptySlotColor,
+  emptySlotBorder,
   onCardPress,
   onCardHover,
   onExpansionChange,
@@ -296,7 +303,12 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
     return (
       <Pressable onPress={() => onTouchEvent?.(pileIndex)}>
         <View style={[styles.pileContainer, columnHeight > 0 && { height: columnHeight }]}>
-          <View style={[styles.emptySlot, { aspectRatio: CARD_ASPECT_RATIO }]}>
+          <View style={[
+            styles.emptySlot,
+            { aspectRatio: CARD_ASPECT_RATIO },
+            emptySlotColor ? { backgroundColor: emptySlotColor } : null,
+            emptySlotBorder ? { borderColor: emptySlotBorder } : null,
+          ]}>
             <View style={styles.emptySlotInner} />
           </View>
         </View>
@@ -344,6 +356,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
               isHinted={isHinted}
               isInteractive={isInteractive && !disabled}
               isDimmed={isExpandedOnPile && !isInExpandedRange}
+              cardBackId={cardBackId}
             />
           </Pressable>
         );

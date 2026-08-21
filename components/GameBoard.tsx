@@ -3,8 +3,17 @@ import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground
 import { computeCardLayout, computeCardLayoutFromWidth } from '../constants/CardLayout';
 import { COLORS } from '../constants/Colors';
 import { DEFAULT_DIFFICULTY, DEFAULT_SUIT_COUNT, SUIT_COUNT_LABELS, SuitCount, clampDifficulty, clampSuitCount, difficultyLabel } from '../constants/Difficulty';
+import { CardBackId, DEFAULT_CARD_BACK, DEFAULT_TABLE_THEME, TABLE_THEMES, TableThemeId } from '../constants/Themes';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
+import {
+    loadCardBack,
+    loadSoundEnabled,
+    loadTableTheme,
+    saveCardBack,
+    saveSoundEnabled,
+    saveTableTheme,
+} from '../utils/appearance';
 import { IMAGES, preloadImages } from '../utils/assets';
 import { warmCardFaceCache } from '../utils/cardFaceCache';
 import {
@@ -17,6 +26,7 @@ import {
     savePreferredSuitCount,
 } from '../utils/playerStats';
 import { computeScore, formatElapsed } from '../utils/score';
+import { initSounds, playSound, setSoundEnabled } from '../utils/sound';
 import { DifficultyModal } from './DifficultyModal';
 import { GameButton, GameButtonVariant } from './GameButton';
 import { HelpModal } from './HelpModal';
@@ -24,6 +34,7 @@ import { HudStat } from './HudStat';
 import { Pile, PileRef } from './Pile';
 import { StatsModal } from './StatsModal';
 import { StockPile } from './StockPile';
+import { ThemeModal } from './ThemeModal';
 
 const SPARKLE_COUNT = 8;
 const SUIT_IMAGE_MAP: Record<string, any> = {
@@ -37,6 +48,11 @@ const SUIT_COLOR_MAP: Record<string, string> = {
     diamonds: COLORS.diamonds,
     clubs: COLORS.clubs,
     spades: COLORS.spades,
+};
+const CARD_BACK_IMAGES: Record<CardBackId, number> = {
+    classic: IMAGES.card_back,
+    navy: IMAGES.card_back_navy,
+    crimson: IMAGES.card_back_crimson,
 };
 const MAX_COMPLETED = 8;
 const ICON_SPARKLE_COUNT = 6;
@@ -75,6 +91,10 @@ export const GameBoard: React.FC = () => {
     const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
     const [showDifficultyModal, setShowDifficultyModal] = useState<boolean>(false);
     const [showStatsModal, setShowStatsModal] = useState<boolean>(false);
+    const [showThemeModal, setShowThemeModal] = useState<boolean>(false);
+    const [tableTheme, setTableTheme] = useState<TableThemeId>(DEFAULT_TABLE_THEME);
+    const [cardBack, setCardBack] = useState<CardBackId>(DEFAULT_CARD_BACK);
+    const [soundOn, setSoundOn] = useState(true);
     const [difficulty, setDifficulty] = useState<number>(DEFAULT_DIFFICULTY);
     const [suitCount, setSuitCount] = useState<SuitCount>(DEFAULT_SUIT_COUNT);
     const [isDailyGame, setIsDailyGame] = useState(false);
@@ -188,10 +208,20 @@ export const GameBoard: React.FC = () => {
             try {
                 setLoading(true);
                 await preloadImages();
-                const preferred = await loadPreferredDifficulty();
-                const preferredSuits = await loadPreferredSuitCount();
-                const lastDailyWin = await loadLastDailyWinDate();
+                await initSounds();
+                const [preferred, preferredSuits, lastDailyWin, savedTable, savedBack, savedSound] = await Promise.all([
+                    loadPreferredDifficulty(),
+                    loadPreferredSuitCount(),
+                    loadLastDailyWinDate(),
+                    loadTableTheme(),
+                    loadCardBack(),
+                    loadSoundEnabled(),
+                ]);
                 if (!isMountedRef.current) return;
+                setTableTheme(savedTable);
+                setCardBack(savedBack);
+                setSoundOn(savedSound);
+                setSoundEnabled(savedSound);
                 setDifficulty(preferred);
                 difficultyRef.current = preferred;
                 setSuitCount(preferredSuits);
@@ -577,6 +607,7 @@ export const GameBoard: React.FC = () => {
 
         if (newlyCompleted.length === 0) return;
 
+        playSound('complete');
         newlyCompleted.forEach(function (s) {
             animationQueueRef.current.push(s);
         });
@@ -591,6 +622,7 @@ export const GameBoard: React.FC = () => {
         setIsMovingCard(true);
         try {
             const newState = await gameService.dealCards();
+            playSound('deal');
             setGameState(newState[0]);
             setActionError(null);
         } catch (err) {
@@ -721,6 +753,7 @@ export const GameBoard: React.FC = () => {
                 undefined,
             );
 
+            playSound('flip');
             await playStateSequence(newStates, runId, moveRunIdRef);
         } catch (err) {
             if (isRunActive(runId, moveRunIdRef)) {
@@ -769,6 +802,25 @@ export const GameBoard: React.FC = () => {
     const handleHelp = () => {
         setShowHelpModal(true);
     };
+
+    const handleSelectTable = (id: TableThemeId) => {
+        setTableTheme(id);
+        void saveTableTheme(id);
+    };
+
+    const handleSelectCardBack = (id: CardBackId) => {
+        setCardBack(id);
+        void saveCardBack(id);
+    };
+
+    const handleToggleSound = () => {
+        const next = !soundOn;
+        setSoundOn(next);
+        setSoundEnabled(next);
+        void saveSoundEnabled(next);
+    };
+
+    const activeTable = TABLE_THEMES[tableTheme];
 
     const showTooltip = (key: string) => {
         if (tooltipHideTimer.current) {
@@ -885,7 +937,7 @@ export const GameBoard: React.FC = () => {
             >
                 <View style={styles.gameLayout}>
                 <View style={styles.vignetteOverlay} pointerEvents="none" />
-                <View style={styles.feltTint} pointerEvents="none" />
+                <View style={[styles.feltTint, { backgroundColor: activeTable.feltTint }]} pointerEvents="none" />
 
                 <View style={styles.logoContainer}>
                     <Image
@@ -903,7 +955,10 @@ export const GameBoard: React.FC = () => {
                         <View style={styles.hudDivider} />
                         <View style={styles.hudStock}>
                             <Text style={styles.hudStockLabel}>STOCK</Text>
-                            <StockPile drawsRemaining={gameState.drawsRemaining} />
+                            <StockPile
+                                drawsRemaining={gameState.drawsRemaining}
+                                cardBackSource={CARD_BACK_IMAGES[cardBack]}
+                            />
                         </View>
                         <View style={styles.hudDivider} />
                         <HudStat
@@ -923,18 +978,32 @@ export const GameBoard: React.FC = () => {
                                 {isDailyGame ? 'Daily · ' : ''}{difficultyLabel(difficulty)} · {SUIT_COUNT_LABELS[suitCount]}
                             </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => setShowStatsModal(true)}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                            <Text style={styles.hudMetaLink}>Stats</Text>
-                        </TouchableOpacity>
+                        <View style={styles.hudMetaLinks}>
+                            <TouchableOpacity
+                                onPress={() => setShowStatsModal(true)}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                                <Text style={styles.hudMetaLink}>Stats</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setShowThemeModal(true)}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                                <Text style={styles.hudMetaLink}>Look</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
 
                 <View style={styles.tableFrame}>
                     <View
-                        style={styles.tableInner}
+                        style={[
+                            styles.tableInner,
+                            {
+                                backgroundColor: activeTable.felt,
+                                borderColor: activeTable.feltLight,
+                            },
+                        ]}
                         onLayout={(e) => {
                             const { width, height } = e.nativeEvent.layout;
                             if (width > 0 && height > 0) {
@@ -965,6 +1034,9 @@ export const GameBoard: React.FC = () => {
                                     columnHeight={tableLayout.height}
                                     hoveredCard={hoveredCard}
                                     hintedCard={hintedCard}
+                                    cardBackId={cardBack}
+                                    emptySlotColor={activeTable.emptySlot}
+                                    emptySlotBorder={activeTable.emptySlotBorder}
                                     onCardPress={handleCardPress}
                                     onCardHover={handleCardHover}
                                     onExpansionChange={handlePileExpansionChange}
@@ -1162,6 +1234,17 @@ export const GameBoard: React.FC = () => {
                     onClose={() => setShowStatsModal(false)}
                 />
 
+                <ThemeModal
+                    visible={showThemeModal}
+                    onClose={() => setShowThemeModal(false)}
+                    tableTheme={tableTheme}
+                    cardBack={cardBack}
+                    soundEnabled={soundOn}
+                    onSelectTable={handleSelectTable}
+                    onSelectCardBack={handleSelectCardBack}
+                    onToggleSound={handleToggleSound}
+                />
+
                 {/* Congratulations overlay */}
                 {showCongrats && (
                     <Animated.View style={[styles.congratsOverlay, { opacity: congratsOpacity }]}>
@@ -1319,6 +1402,11 @@ const styles = StyleSheet.create({
         fontSize: 10,
         fontWeight: '700',
         letterSpacing: 0.3,
+    },
+    hudMetaLinks: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
     },
     hudMetaLink: {
         color: COLORS.textGold,
