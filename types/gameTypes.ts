@@ -24,6 +24,8 @@ export interface GameState {
   moves: number;
   difficulty: number;
   drawsRemaining: number;
+  suitCount?: number;
+  seed?: number | null;
 }
 
 export interface MoveRequest {
@@ -31,4 +33,20 @@ export interface MoveRequest {
   from_col: number;
   to_row?: number;
   to_col?: number;
+}
+
+export interface HintResponse {
+  from_row: number | null;
+  from_col: number | null;
+  to_col: number | null;
+  reason: string;
+  message: string;
+}
+
+export interface DailyChallenge {
+  date: string;
+  seed: number;
+  difficulty: number;
+  suit_count: number;
+  label?: string;
 }

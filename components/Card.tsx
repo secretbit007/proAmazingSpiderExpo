@@ -10,6 +10,7 @@ interface CardProps {
   card: Card;
   cardWidth: number;
   isHovered?: boolean;
+  isHinted?: boolean;
   isInteractive?: boolean;
   isDimmed?: boolean;
 }
@@ -100,6 +101,7 @@ function CardComponentBase({
   card,
   cardWidth,
   isHovered = false,
+  isHinted = false,
   isInteractive = true,
   isDimmed = false,
 }: CardProps) {
@@ -111,6 +113,7 @@ function CardComponentBase({
       style={[
         styles.cardContainer,
         isHovered && styles.hoveredCard,
+        isHinted && styles.hintedCard,
         !isInteractive && styles.nonInteractiveCard,
         isDimmed && styles.dimmedCard,
       ]}
@@ -127,6 +130,7 @@ function areCardPropsEqual(prev: CardProps, next: CardProps): boolean {
     prev.card.suit === next.card.suit &&
     prev.card.isFaceUp === next.card.isFaceUp &&
     prev.isHovered === next.isHovered &&
+    prev.isHinted === next.isHinted &&
     prev.isInteractive === next.isInteractive &&
     prev.isDimmed === next.isDimmed
   );
@@ -241,6 +245,17 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 20,
     zIndex: 100,
+  },
+  hintedCard: {
+    transform: [{ translateY: -4 }, { scale: 1.02 }],
+    borderColor: COLORS.gold,
+    borderWidth: 2,
+    shadowColor: COLORS.gold,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
+    elevation: 18,
+    zIndex: 90,
   },
   nonInteractiveCard: {
     opacity: 0.88,

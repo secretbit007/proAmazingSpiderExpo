@@ -2,16 +2,19 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, useWindowDimensions, View } from 'react-native';
 import { computeCardLayout, computeCardLayoutFromWidth } from '../constants/CardLayout';
 import { COLORS } from '../constants/Colors';
-import { DEFAULT_DIFFICULTY, clampDifficulty, difficultyLabel } from '../constants/Difficulty';
+import { DEFAULT_DIFFICULTY, DEFAULT_SUIT_COUNT, SUIT_COUNT_LABELS, SuitCount, clampDifficulty, clampSuitCount, difficultyLabel } from '../constants/Difficulty';
 import { gameService } from '../services/gameService';
 import { GameState } from '../types/gameTypes';
 import { IMAGES, preloadImages } from '../utils/assets';
 import { warmCardFaceCache } from '../utils/cardFaceCache';
 import {
+    loadLastDailyWinDate,
     loadPreferredDifficulty,
+    loadPreferredSuitCount,
     recordGameStarted,
     recordWin,
     savePreferredDifficulty,
+    savePreferredSuitCount,
 } from '../utils/playerStats';
 import { computeScore, formatElapsed } from '../utils/score';
 import { DifficultyModal } from './DifficultyModal';
@@ -52,8 +55,9 @@ function actionErrorMessage(err: unknown, fallback: string): string {
 }
 
 const BUTTON_DESCRIPTIONS: Record<string, string> = {
-    new: 'Pick difficulty and start a fresh game',
+    new: 'Pick difficulty, suits, or play the daily deal',
     deal: 'Deal 1 card to each pile from the stock',
+    hint: 'Highlight one legal move',
     solve: 'Auto-solve the game showing all moves',
     undo: 'Undo the last move you made',
     help: 'Read game rules and strategy tips',
@@ -72,9 +76,13 @@ export const GameBoard: React.FC = () => {
     const [showDifficultyModal, setShowDifficultyModal] = useState<boolean>(false);
     const [showStatsModal, setShowStatsModal] = useState<boolean>(false);
     const [difficulty, setDifficulty] = useState<number>(DEFAULT_DIFFICULTY);
+    const [suitCount, setSuitCount] = useState<SuitCount>(DEFAULT_SUIT_COUNT);
+    const [isDailyGame, setIsDailyGame] = useState(false);
+    const [dailyCompleted, setDailyCompleted] = useState(false);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
     const [timerRunning, setTimerRunning] = useState(false);
     const [winScore, setWinScore] = useState<number | null>(null);
+    const [hintedCard, setHintedCard] = useState<{ pileIndex: number; cardIndex: number } | null>(null);
     const [expandedPileIndex, setExpandedPileIndex] = useState<number | null>(null);
     const pileRefs = useRef<(PileRef | null)[]>([]);
     const isMountedRef = useRef(true);
@@ -82,6 +90,7 @@ export const GameBoard: React.FC = () => {
     const moveRunIdRef = useRef(0);
     const winRecordedRef = useRef(false);
     const difficultyRef = useRef(DEFAULT_DIFFICULTY);
+    const isDailyRef = useRef(false);
 
     // Button tooltip state
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -180,16 +189,23 @@ export const GameBoard: React.FC = () => {
                 setLoading(true);
                 await preloadImages();
                 const preferred = await loadPreferredDifficulty();
+                const preferredSuits = await loadPreferredSuitCount();
+                const lastDailyWin = await loadLastDailyWinDate();
                 if (!isMountedRef.current) return;
                 setDifficulty(preferred);
                 difficultyRef.current = preferred;
-                const state = await gameService.startNewGame(preferred);
+                setSuitCount(preferredSuits);
+                setDailyCompleted(lastDailyWin === new Date().toISOString().slice(0, 10));
+                const state = await gameService.startNewGame(preferred, { suitCount: preferredSuits });
                 if (!isMountedRef.current) return;
                 setGameState(state[0]);
                 setElapsedSeconds(0);
                 setTimerRunning(true);
                 winRecordedRef.current = false;
                 setWinScore(null);
+                setIsDailyGame(false);
+                isDailyRef.current = false;
+                setHintedCard(null);
                 void recordGameStarted();
                 setError(null);
             } catch (err) {
@@ -499,7 +515,11 @@ export const GameBoard: React.FC = () => {
             elapsedSeconds,
             score,
             difficulty: difficultyRef.current,
+            isDaily: isDailyRef.current,
         });
+        if (isDailyRef.current) {
+            setDailyCompleted(true);
+        }
     }, [showCongrats, gameState, elapsedSeconds]);
 
     // Detect newly completed sequences
@@ -595,9 +615,14 @@ export const GameBoard: React.FC = () => {
         }
     };
 
-    const startGameWithDifficulty = async (nextDifficulty: number) => {
+    const startGameWithDifficulty = async (
+        nextDifficulty: number,
+        nextSuitCount: SuitCount = suitCount,
+        options?: { seed?: number; isDaily?: boolean }
+    ) => {
         if (isStartingNewGame) return;
         const clamped = clampDifficulty(nextDifficulty);
+        const suits = clampSuitCount(nextSuitCount);
 
         try {
             solveRunIdRef.current += 1;
@@ -606,10 +631,20 @@ export const GameBoard: React.FC = () => {
             setIsMovingCard(false);
             setIsStartingNewGame(true);
             setActionError(null);
+            setHintedCard(null);
             setDifficulty(clamped);
             difficultyRef.current = clamped;
-            await savePreferredDifficulty(clamped);
-            const newState = await gameService.startNewGame(clamped);
+            setSuitCount(suits);
+            setIsDailyGame(Boolean(options?.isDaily));
+            isDailyRef.current = Boolean(options?.isDaily);
+            if (!options?.isDaily) {
+                await savePreferredDifficulty(clamped);
+                await savePreferredSuitCount(suits);
+            }
+            const newState = await gameService.startNewGame(clamped, {
+                suitCount: suits,
+                seed: options?.seed,
+            });
             setGameState(newState[0]);
             setElapsedSeconds(0);
             setTimerRunning(true);
@@ -628,8 +663,40 @@ export const GameBoard: React.FC = () => {
         setShowDifficultyModal(true);
     };
 
-    const handleDifficultySelect = (selected: number) => {
-        void startGameWithDifficulty(selected);
+    const handleDifficultySelect = (selected: number, selectedSuits: SuitCount) => {
+        void startGameWithDifficulty(selected, selectedSuits);
+    };
+
+    const handleDailySelect = async () => {
+        try {
+            const daily = await gameService.getDailyChallenge();
+            await startGameWithDifficulty(
+                daily.difficulty,
+                clampSuitCount(daily.suit_count),
+                { seed: daily.seed, isDaily: true }
+            );
+        } catch (err) {
+            setActionError(actionErrorMessage(err, 'Could not load the daily challenge.'));
+        }
+    };
+
+    const handleHint = async () => {
+        if (!gameState || isBusy) return;
+        try {
+            const hint = await gameService.getHint();
+            if (hint.from_row == null || hint.from_col == null) {
+                setHintedCard(null);
+                setActionError(hint.message || 'No moves right now — try Deal.');
+                return;
+            }
+            setActionError(null);
+            setHintedCard({
+                pileIndex: hint.from_col,
+                cardIndex: Math.max(0, hint.from_row - 1),
+            });
+        } catch (err) {
+            setActionError(actionErrorMessage(err, 'Hint failed. Please try again.'));
+        }
     };
 
     const handleCardPress = async (pileIndex: number, cardIndex: number) => {
@@ -639,6 +706,7 @@ export const GameBoard: React.FC = () => {
         moveRunIdRef.current = runId;
         setIsMovingCard(true);
         setActionError(null);
+        setHintedCard(null);
 
         try {
             // For Spider Solitaire, we typically move the card and all cards below it
@@ -765,9 +833,14 @@ export const GameBoard: React.FC = () => {
             setError(null);
             setLoading(true);
             const preferred = await loadPreferredDifficulty();
+            const preferredSuits = await loadPreferredSuitCount();
             setDifficulty(preferred);
             difficultyRef.current = preferred;
-            const state = await gameService.startNewGame(preferred);
+            setSuitCount(preferredSuits);
+            setIsDailyGame(false);
+            isDailyRef.current = false;
+            setHintedCard(null);
+            const state = await gameService.startNewGame(preferred, { suitCount: preferredSuits });
             setGameState(state[0]);
             setElapsedSeconds(0);
             setTimerRunning(true);
@@ -847,7 +920,7 @@ export const GameBoard: React.FC = () => {
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
                             <Text style={styles.hudMetaText}>
-                                {difficultyLabel(difficulty)} · {difficulty}/9
+                                {isDailyGame ? 'Daily · ' : ''}{difficultyLabel(difficulty)} · {SUIT_COUNT_LABELS[suitCount]}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -891,6 +964,7 @@ export const GameBoard: React.FC = () => {
                                     cardWidth={cardLayout.cardWidth}
                                     columnHeight={tableLayout.height}
                                     hoveredCard={hoveredCard}
+                                    hintedCard={hintedCard}
                                     onCardPress={handleCardPress}
                                     onCardHover={handleCardHover}
                                     onExpansionChange={handlePileExpansionChange}
@@ -969,6 +1043,7 @@ export const GameBoard: React.FC = () => {
                     {([
                         { key: 'new' as const, variant: 'new' as GameButtonVariant, icon: '＋', label: 'New', onPress: handleNewGame, disabled: isBusy },
                         { key: 'deal', variant: 'deal' as GameButtonVariant, icon: '▤', label: 'Deal', onPress: handleDealCards, disabled: isBusy },
+                        { key: 'hint', variant: 'hint' as GameButtonVariant, icon: '?', label: 'Hint', onPress: handleHint, disabled: isBusy },
                         { key: 'solve', variant: 'solve' as GameButtonVariant, icon: '★', label: isSolving ? 'Busy' : 'Solve', onPress: handleSolve, disabled: isBusy },
                         { key: 'undo', variant: 'undo' as GameButtonVariant, icon: '↩', label: 'Undo', onPress: handleUndo, disabled: isBusy },
                         { key: 'help', variant: 'help' as GameButtonVariant, icon: 'i', label: 'Help', onPress: handleHelp, disabled: isBusy },
@@ -1076,7 +1151,10 @@ export const GameBoard: React.FC = () => {
                     visible={showDifficultyModal}
                     onClose={() => setShowDifficultyModal(false)}
                     onDifficultySelect={handleDifficultySelect}
+                    onDailySelect={() => { void handleDailySelect(); }}
                     currentDifficulty={difficulty}
+                    currentSuitCount={suitCount}
+                    dailyCompleted={dailyCompleted}
                 />
 
                 <StatsModal
@@ -1123,7 +1201,7 @@ export const GameBoard: React.FC = () => {
                                 Score {winScore != null ? winScore : computeScore(gameState.moves, elapsedSeconds)}
                             </Text>
                             <Text style={styles.congratsDiff}>
-                                {difficultyLabel(difficulty)}
+                                {isDailyGame ? 'Daily · ' : ''}{difficultyLabel(difficulty)} · {SUIT_COUNT_LABELS[suitCount]}
                             </Text>
                         </Animated.View>
 

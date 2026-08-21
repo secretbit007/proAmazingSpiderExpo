@@ -84,6 +84,8 @@ export const convertBackendToFrontend = (backendStates: any[]): GameState[] => {
       moves: Number(backendState.moves) || 0,
       difficulty: Number(backendState.difficulty) || 0,
       drawsRemaining: Number(backendState.draws_remaining) || 0,
+      suitCount: Number(backendState.suit_count) || 4,
+      seed: backendState.seed ?? null,
     };
   });
 };

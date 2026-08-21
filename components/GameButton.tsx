@@ -3,7 +3,7 @@ import React, { useRef } from 'react';
 import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { COLORS } from '../constants/Colors';
 
-export type GameButtonVariant = 'new' | 'deal' | 'solve' | 'undo' | 'help';
+export type GameButtonVariant = 'new' | 'deal' | 'solve' | 'undo' | 'help' | 'hint';
 
 const VARIANT_ACCENT: Record<GameButtonVariant, string> = {
   new: '#5ecf7a',
@@ -11,6 +11,7 @@ const VARIANT_ACCENT: Record<GameButtonVariant, string> = {
   solve: '#d4b8ff',
   undo: '#b0bcc8',
   help: '#f0b429',
+  hint: '#ff9f43',
 };
 
 interface GameButtonProps {

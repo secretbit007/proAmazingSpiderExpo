@@ -1,4 +1,4 @@
-import { GameState, MoveRequest } from '../types/gameTypes';
+import { DailyChallenge, GameState, HintResponse, MoveRequest } from '../types/gameTypes';
 import { API_BASE_URL, API_FETCH_TIMEOUT_MS } from '../constants/ApiConfig';
 import { sessionStorage } from '../utils/sessionStorage';
 
@@ -76,11 +76,18 @@ const apiFetch = async (path: string, init?: RequestInit): Promise<Response> => 
 };
 
 export const api = {
-  startNewGame: async (difficulty: number): Promise<{ session_id: string; game_state: GameState }> => {
+  startNewGame: async (
+    difficulty: number,
+    options?: { suitCount?: number; seed?: number }
+  ): Promise<{ session_id: string; game_state: GameState }> => {
     const response = await apiFetch('/new-game', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ difficulty }),
+      body: JSON.stringify({
+        difficulty,
+        suit_count: options?.suitCount ?? 4,
+        seed: options?.seed ?? null,
+      }),
     });
     return handleResponse(response);
   },
@@ -125,6 +132,19 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
+    return handleResponse(response);
+  },
+
+  getHint: async (): Promise<HintResponse> => {
+    const response = await apiFetch('/hint', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return handleResponse(response);
+  },
+
+  getDailyChallenge: async (): Promise<DailyChallenge> => {
+    const response = await apiFetch('/daily');
     return handleResponse(response);
   },
 };

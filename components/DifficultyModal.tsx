@@ -5,6 +5,8 @@ import {
   DIFFICULTY_LABELS,
   MAX_DIFFICULTY,
   MIN_DIFFICULTY,
+  SUIT_COUNT_LABELS,
+  SuitCount,
   clampDifficulty,
   difficultyLabel,
 } from '../constants/Difficulty';
@@ -12,24 +14,32 @@ import {
 interface DifficultyModalProps {
   visible: boolean;
   onClose: () => void;
-  onDifficultySelect: (difficulty: number) => void;
+  onDifficultySelect: (difficulty: number, suitCount: SuitCount) => void;
+  onDailySelect?: () => void;
   currentDifficulty: number;
+  currentSuitCount: SuitCount;
+  dailyCompleted?: boolean;
 }
 
 export const DifficultyModal: React.FC<DifficultyModalProps> = ({
   visible,
   onClose,
   onDifficultySelect,
+  onDailySelect,
   currentDifficulty,
+  currentSuitCount,
+  dailyCompleted = false,
 }) => {
   const [inputValue, setInputValue] = useState<string>(String(currentDifficulty));
+  const [suitCount, setSuitCount] = useState<SuitCount>(currentSuitCount);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
     if (!visible) return;
     setInputValue(String(clampDifficulty(currentDifficulty)));
+    setSuitCount(currentSuitCount);
     setError('');
-  }, [visible, currentDifficulty]);
+  }, [visible, currentDifficulty, currentSuitCount]);
 
   if (!visible) return null;
 
@@ -45,7 +55,7 @@ export const DifficultyModal: React.FC<DifficultyModalProps> = ({
       return;
     }
     setError('');
-    onDifficultySelect(num);
+    onDifficultySelect(num, suitCount);
     onClose();
   };
 
@@ -71,6 +81,21 @@ export const DifficultyModal: React.FC<DifficultyModalProps> = ({
           />
           {diffLabel ? <Text style={styles.diffLabel}>{diffLabel}</Text> : null}
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        </View>
+
+        <View style={styles.chipRow}>
+          {([1, 2, 4] as SuitCount[]).map((count) => (
+            <TouchableOpacity
+              key={count}
+              style={[styles.chip, suitCount === count && styles.chipActive]}
+              onPress={() => setSuitCount(count)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.chipText, suitCount === count && styles.chipTextActive]}>
+                {SUIT_COUNT_LABELS[count]}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         <View style={styles.chipRow}>
@@ -123,8 +148,23 @@ export const DifficultyModal: React.FC<DifficultyModalProps> = ({
         </View>
 
         <Text style={styles.currentText}>
-          Current: {clampDifficulty(currentDifficulty)} ({difficultyLabel(currentDifficulty)})
+          Current: {clampDifficulty(currentDifficulty)} ({difficultyLabel(currentDifficulty)}) · {SUIT_COUNT_LABELS[currentSuitCount]}
         </Text>
+
+        {onDailySelect ? (
+          <TouchableOpacity
+            style={styles.dailyButton}
+            onPress={() => {
+              onClose();
+              onDailySelect();
+            }}
+            activeOpacity={0.75}
+          >
+            <Text style={styles.dailyButtonText}>
+              {dailyCompleted ? 'Daily done — play again' : 'Play Daily Challenge'}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </View>
   );
@@ -288,5 +328,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     marginTop: 16,
+  },
+  dailyButton: {
+    marginTop: 12,
+    paddingVertical: 11,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: COLORS.buttonDeal,
+    borderWidth: 1.5,
+    borderColor: COLORS.brass,
+  },
+  dailyButtonText: {
+    color: COLORS.buttonText,
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

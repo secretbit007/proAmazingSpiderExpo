@@ -1,16 +1,19 @@
-import { GameState } from '../types/gameTypes';
+import { DailyChallenge, GameState, HintResponse } from '../types/gameTypes';
 import { convertBackendToFrontend } from '../utils/gameStateConverter';
 import { buildSolveReplayStates } from '../utils/solveReplay';
 import { sessionStorage } from '../utils/sessionStorage';
 import { api } from './api';
 
 export const gameService = {
-  startNewGame: async (difficulty: number): Promise<GameState[]> => {
+  startNewGame: async (
+    difficulty: number,
+    options?: { suitCount?: number; seed?: number }
+  ): Promise<GameState[]> => {
     try {
       // Clear any existing session before starting a new game
       sessionStorage.clearSessionId();
       
-      const response = await api.startNewGame(difficulty);
+      const response = await api.startNewGame(difficulty, options);
       
       // Extract and store session_id if present
       if (response.session_id) {
@@ -73,6 +76,14 @@ export const gameService = {
       // console.error('Error undoing move:', error);
       throw error;
     }
+  },
+
+  getHint: async (): Promise<HintResponse> => {
+    return api.getHint();
+  },
+
+  getDailyChallenge: async (): Promise<DailyChallenge> => {
+    return api.getDailyChallenge();
   },
 
   clearSession: (): void => {

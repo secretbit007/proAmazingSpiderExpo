@@ -11,6 +11,7 @@ interface PileProps {
   cardWidth: number;
   columnHeight: number;
   hoveredCard: { pileIndex: number; cardIndex: number } | null;
+  hintedCard?: { pileIndex: number; cardIndex: number } | null;
   onCardPress?: (pileIndex: number, cardIndex: number) => void;
   onCardHover?: (pileIndex: number, cardIndex: number, isHovered: boolean) => void;
   onExpansionChange?: (pileIndex: number | null) => void;
@@ -146,6 +147,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
   cardWidth,
   columnHeight,
   hoveredCard,
+  hintedCard = null,
   onCardPress,
   onCardHover,
   onExpansionChange,
@@ -308,6 +310,8 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
         const isInteractive = cardIndex >= interactiveStartIndex;
         const isHovered =
           hoveredCard?.pileIndex === pileIndex && hoveredCard?.cardIndex === cardIndex;
+        const isHinted =
+          hintedCard?.pileIndex === pileIndex && hintedCard?.cardIndex === cardIndex;
         const isInExpandedRange =
           expansionRange != null &&
           cardIndex >= expansionRange.start &&
@@ -337,6 +341,7 @@ export const Pile = React.forwardRef<PileRef, PileProps>(({
               card={card}
               cardWidth={cardWidth}
               isHovered={isHovered}
+              isHinted={isHinted}
               isInteractive={isInteractive && !disabled}
               isDimmed={isExpandedOnPile && !isInExpandedRange}
             />

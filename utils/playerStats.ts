@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { clampDifficulty, DEFAULT_DIFFICULTY } from '../constants/Difficulty';
+import { clampDifficulty, clampSuitCount, DEFAULT_DIFFICULTY, DEFAULT_SUIT_COUNT, SuitCount } from '../constants/Difficulty';
 
 const STATS_KEY = '@proAmazingSpider/playerStats';
 const DIFFICULTY_KEY = '@proAmazingSpider/preferredDifficulty';
+const SUIT_KEY = '@proAmazingSpider/preferredSuitCount';
+const LAST_DAILY_WIN_KEY = '@proAmazingSpider/lastDailyWinDate';
 
 export interface PlayerStats {
   gamesPlayed: number;
@@ -21,6 +23,7 @@ export interface WinRecord {
   elapsedSeconds: number;
   score: number;
   difficulty: number;
+  isDaily?: boolean;
 }
 
 const EMPTY_STATS: PlayerStats = {
@@ -64,6 +67,32 @@ export async function savePreferredDifficulty(difficulty: number): Promise<void>
     await AsyncStorage.setItem(DIFFICULTY_KEY, String(clampDifficulty(difficulty)));
   } catch {
     // Ignore persistence errors — game still works.
+  }
+}
+
+export async function loadPreferredSuitCount(): Promise<SuitCount> {
+  try {
+    const raw = await AsyncStorage.getItem(SUIT_KEY);
+    if (raw == null) return DEFAULT_SUIT_COUNT;
+    return clampSuitCount(parseInt(raw, 10));
+  } catch {
+    return DEFAULT_SUIT_COUNT;
+  }
+}
+
+export async function savePreferredSuitCount(suitCount: number): Promise<void> {
+  try {
+    await AsyncStorage.setItem(SUIT_KEY, String(clampSuitCount(suitCount)));
+  } catch {
+    // Ignore persistence errors.
+  }
+}
+
+export async function loadLastDailyWinDate(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(LAST_DAILY_WIN_KEY);
+  } catch {
+    return null;
   }
 }
 
@@ -127,5 +156,12 @@ export async function recordWin(win: WinRecord): Promise<PlayerStats> {
     lastWinDate: today,
   };
   await savePlayerStats(next);
+  if (win.isDaily) {
+    try {
+      await AsyncStorage.setItem(LAST_DAILY_WIN_KEY, today);
+    } catch {
+      // Ignore persistence errors.
+    }
+  }
   return next;
 }
