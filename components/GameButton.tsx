@@ -81,7 +81,14 @@ export const GameButton: React.FC<GameButtonProps> = ({
               <View style={[styles.iconMedallion, { borderColor: accent, backgroundColor: `${accent}22` }]}>
                 <Text style={[styles.icon, { color: accent }]}>{icon}</Text>
               </View>
-              <Text style={styles.label}>{label}</Text>
+              <Text
+                style={styles.label}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
+                {label}
+              </Text>
             </View>
           </View>
         </Animated.View>
@@ -93,6 +100,7 @@ export const GameButton: React.FC<GameButtonProps> = ({
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
+    minWidth: 0,
     height: '100%',
   },
   wrapperDisabled: {
@@ -107,8 +115,8 @@ const styles = StyleSheet.create({
   },
   outerFrame: {
     flex: 1,
-    borderRadius: 9,
-    padding: 2,
+    borderRadius: 8,
+    padding: 1.5,
     backgroundColor: COLORS.woodMid,
     borderWidth: 1,
     borderColor: COLORS.brass,
@@ -128,31 +136,34 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255, 255, 255, 0.07)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.55)',
-    paddingVertical: 2,
+    paddingVertical: 1,
     paddingHorizontal: 1,
+    overflow: 'hidden',
   },
   iconMedallion: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 1,
   },
   icon: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '900',
-    lineHeight: 13,
+    lineHeight: 12,
     textAlign: 'center',
   },
   label: {
     color: COLORS.brassLight,
     fontWeight: '800',
-    fontSize: 7,
-    letterSpacing: 0.6,
+    fontSize: 8,
+    letterSpacing: 0,
     textTransform: 'uppercase',
-    lineHeight: 9,
+    lineHeight: 10,
+    width: '100%',
+    textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
