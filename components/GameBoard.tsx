@@ -1416,7 +1416,7 @@ export const GameBoard: React.FC = () => {
                             options={{ format: 'png', quality: 0.92, result: 'tmpfile' }}
                             style={styles.shareCard}
                         >
-                            <Text style={styles.shareCardBrand}>proAmazingSpider</Text>
+                            <Text style={styles.shareCardBrand}>proAmazingSpider - Solitaire</Text>
                             <Animated.View style={[styles.congratsStatsBlock, { opacity: congratsMovesOpacity }]}>
                                 <Text style={styles.congratsMoves}>
                                     {gameState.moves} moves · {formatElapsed(elapsedSeconds)}

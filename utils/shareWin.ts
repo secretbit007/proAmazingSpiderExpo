@@ -9,7 +9,7 @@ export function buildWinShareText(opts: {
 }): string {
   const mode = opts.isDaily ? 'Daily Challenge' : opts.label;
   return [
-    'I just cleared proAmazingSpider!',
+    'I just cleared proAmazingSpider - Solitaire!',
     mode,
     `${opts.moves} moves · ${opts.time} · score ${opts.score}`,
     'Can you beat that?',

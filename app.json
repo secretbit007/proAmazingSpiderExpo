@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "proAmazingSpider",
+    "name": "proAmazingSpider - Solitaire",
     "slug": "proAmazingSpider",
     "version": "1.2.0",
     "orientation": "default",
@@ -12,6 +12,7 @@
       "bundleIdentifier": "com.Mamre.proAmazingSpider",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "proAmazingSpider - Solitaire",
         "UISupportedInterfaceOrientations": [
           "UIInterfaceOrientationLandscapeLeft",
           "UIInterfaceOrientationLandscapeRight",
@@ -31,7 +32,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.Mamre.proAmazingSpider"
+      "package": "com.Mamre.proAmazingSpider",
+      "label": "proAmazingSpider - Solitaire"
     },
     "web": {
       "bundler": "metro",

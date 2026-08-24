@@ -18,7 +18,7 @@ interface HelpModalProps {
 }
 
 const HELP_PARAGRAPHS = [
-  'proAmazingSpider is a computerised version of Spider, which is a traditional 2 pack card patience. proAmazingSpider is much faster and more fun to play.',
+  'proAmazingSpider - Solitaire is a computerised version of Spider, which is a traditional 2 pack card patience. It is much faster and more fun to play.',
   'In Spider 54 cards are initially dealt in 4 columns of 6 cards and 6 columns of 5 cards. The remaining 50 cards are held in a stack, to be dealt 10 cards at a time when no more moves are possible.',
   'The aim is to order the cards in suits from king down to ace.',
   'When a whole suit of 13 cards has been formed, it can be removed from the display by clicking on the king.',
@@ -50,7 +50,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close help" />
 
         <View style={styles.sheet}>
-          <Text style={styles.title}>How to Play proAmazingSpider</Text>
+          <Text style={styles.title}>How to Play proAmazingSpider - Solitaire</Text>
           <Text style={styles.subtitle}>Rules & strategy</Text>
 
           <ScrollView
