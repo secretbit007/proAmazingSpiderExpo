@@ -25,7 +25,7 @@ const HELP_PARAGRAPHS = [
   'In Spider, cards can only be moved 1 at a time unless they are the same suit and in descending sequence. Cards can only be moved on to another card of immediately greater rank, or into empty columns. Kings can only be moved into empty columns.',
   'However, proAmazingSpider allows a mixed suit column of cards to be moved, provided there is a logical path. To make that happen, click on the highest card in that mixed suit, when the program will generate the required moves.',
   'The Solve button allows same suit fragments to be joined - useful towards the end of a game.',
-  'Hint highlights one legal move if you get stuck. Daily Challenge deals the same board to everyone that day.',
+  'Hint highlights one legal move if you get stuck. Daily Challenge deals the same board to everyone that day. Win it to post your score on the Daily Board — pick a name, no account needed.',
   'Choose 1, 2, or 4 suits when you start a game. Fewer suits are easier because same-suit runs are more common.',
   'Empty columns are valuable. Therefore it is best not to move kings into empty columns as they cannot be moved again.',
   'The best strategy is to move as many cards as possible on to columns headed by a king, thereby freeing up other columns.',

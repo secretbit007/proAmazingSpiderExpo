@@ -50,3 +50,27 @@ export interface DailyChallenge {
   suit_count: number;
   label?: string;
 }
+
+export interface LeaderboardEntry {
+  rank: number;
+  nickname: string;
+  score: number;
+  moves: number;
+  elapsed_seconds: number;
+  is_you: boolean;
+}
+
+export interface LeaderboardYou {
+  rank: number;
+  nickname: string;
+  score: number;
+  moves: number;
+  elapsed_seconds: number;
+}
+
+export interface LeaderboardResponse {
+  date: string;
+  entries: LeaderboardEntry[];
+  you: LeaderboardYou | null;
+  total: number;
+}

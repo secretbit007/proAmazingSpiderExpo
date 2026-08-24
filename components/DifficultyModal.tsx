@@ -16,6 +16,7 @@ interface DifficultyModalProps {
   onClose: () => void;
   onDifficultySelect: (difficulty: number, suitCount: SuitCount) => void;
   onDailySelect?: () => void;
+  onOpenLeaderboard?: () => void;
   currentDifficulty: number;
   currentSuitCount: SuitCount;
   dailyCompleted?: boolean;
@@ -26,6 +27,7 @@ export const DifficultyModal: React.FC<DifficultyModalProps> = ({
   onClose,
   onDifficultySelect,
   onDailySelect,
+  onOpenLeaderboard,
   currentDifficulty,
   currentSuitCount,
   dailyCompleted = false,
@@ -163,6 +165,19 @@ export const DifficultyModal: React.FC<DifficultyModalProps> = ({
             <Text style={styles.dailyButtonText}>
               {dailyCompleted ? 'Daily done — play again' : 'Play Daily Challenge'}
             </Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {onOpenLeaderboard ? (
+          <TouchableOpacity
+            style={styles.boardLink}
+            onPress={() => {
+              onClose();
+              onOpenLeaderboard();
+            }}
+            activeOpacity={0.75}
+          >
+            <Text style={styles.boardLinkText}>Today’s board</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -342,5 +357,16 @@ const styles = StyleSheet.create({
     color: COLORS.buttonText,
     fontWeight: '700',
     fontSize: 14,
+  },
+  boardLink: {
+    marginTop: 10,
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  boardLinkText: {
+    color: COLORS.textGold,
+    fontSize: 13,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });

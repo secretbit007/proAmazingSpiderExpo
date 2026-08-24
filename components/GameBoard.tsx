@@ -29,12 +29,14 @@ import {
     savePreferredSuitCount,
 } from '../utils/playerStats';
 import { computeScore, formatElapsed } from '../utils/score';
+import { loadPlayerIdentity, saveNickname } from '../utils/playerIdentity';
 import { buildWinShareText, shareWin } from '../utils/shareWin';
 import { initSounds, playSound, setSoundEnabled } from '../utils/sound';
 import { DifficultyModal } from './DifficultyModal';
 import { GameButton, GameButtonVariant } from './GameButton';
 import { HelpModal } from './HelpModal';
 import { HudStat } from './HudStat';
+import { LeaderboardModal } from './LeaderboardModal';
 import { Pile, PileRef } from './Pile';
 import { StatsModal } from './StatsModal';
 import { StockPile } from './StockPile';
@@ -97,6 +99,9 @@ export const GameBoard: React.FC = () => {
     const [showDifficultyModal, setShowDifficultyModal] = useState<boolean>(false);
     const [showStatsModal, setShowStatsModal] = useState<boolean>(false);
     const [showThemeModal, setShowThemeModal] = useState<boolean>(false);
+    const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
+    const [playerId, setPlayerId] = useState('');
+    const [nickname, setNickname] = useState('');
     const [tableTheme, setTableTheme] = useState<TableThemeId>(DEFAULT_TABLE_THEME);
     const [cardBack, setCardBack] = useState<CardBackId>(DEFAULT_CARD_BACK);
     const [soundOn, setSoundOn] = useState(true);
@@ -104,6 +109,7 @@ export const GameBoard: React.FC = () => {
     const [suitCount, setSuitCount] = useState<SuitCount>(DEFAULT_SUIT_COUNT);
     const [isDailyGame, setIsDailyGame] = useState(false);
     const [dailyCompleted, setDailyCompleted] = useState(false);
+    const [dailyDate, setDailyDate] = useState<string | null>(null);
     const [dailyStreak, setDailyStreak] = useState(0);
     const [newAchievements, setNewAchievements] = useState<AchievementId[]>([]);
     const [sharing, setSharing] = useState(false);
@@ -120,6 +126,11 @@ export const GameBoard: React.FC = () => {
     const difficultyRef = useRef(DEFAULT_DIFFICULTY);
     const isDailyRef = useRef(false);
     const usedUndoRef = useRef(false);
+    const usedSolveRef = useRef(false);
+    const playerIdRef = useRef('');
+    const nicknameRef = useRef('');
+    const dailyDateRef = useRef<string | null>(null);
+    const pendingDailySubmitRef = useRef<{ elapsedSeconds: number; date: string } | null>(null);
     const shareShotRef = useRef<ViewShotRef>(null);
 
     // Button tooltip state
@@ -219,7 +230,7 @@ export const GameBoard: React.FC = () => {
                 setLoading(true);
                 await preloadImages();
                 await initSounds();
-                const [preferred, preferredSuits, lastDailyWin, savedTable, savedBack, savedSound, stats] = await Promise.all([
+                const [preferred, preferredSuits, lastDailyWin, savedTable, savedBack, savedSound, stats, identity] = await Promise.all([
                     loadPreferredDifficulty(),
                     loadPreferredSuitCount(),
                     loadLastDailyWinDate(),
@@ -227,6 +238,7 @@ export const GameBoard: React.FC = () => {
                     loadCardBack(),
                     loadSoundEnabled(),
                     loadPlayerStats(),
+                    loadPlayerIdentity(),
                 ]);
                 if (!isMountedRef.current) return;
                 setTableTheme(savedTable);
@@ -238,6 +250,10 @@ export const GameBoard: React.FC = () => {
                 setSuitCount(preferredSuits);
                 setDailyCompleted(lastDailyWin === new Date().toISOString().slice(0, 10));
                 setDailyStreak(stats.dailyCurrentStreak ?? 0);
+                setPlayerId(identity.playerId);
+                playerIdRef.current = identity.playerId;
+                setNickname(identity.nickname);
+                nicknameRef.current = identity.nickname;
                 const state = await gameService.startNewGame(preferred, { suitCount: preferredSuits });
                 if (!isMountedRef.current) return;
                 setGameState(state[0]);
@@ -247,8 +263,12 @@ export const GameBoard: React.FC = () => {
                 setWinScore(null);
                 setIsDailyGame(false);
                 isDailyRef.current = false;
+                dailyDateRef.current = null;
+                setDailyDate(null);
+                pendingDailySubmitRef.current = null;
                 setHintedCard(null);
                 usedUndoRef.current = false;
+                usedSolveRef.current = false;
                 setNewAchievements([]);
                 void recordGameStarted();
                 setError(null);
@@ -548,6 +568,31 @@ export const GameBoard: React.FC = () => {
         });
     };
 
+    const postDailyScore = async () => {
+        const pending = pendingDailySubmitRef.current;
+        const name = nicknameRef.current;
+        const id = playerIdRef.current;
+        if (!pending || !name || !id || usedSolveRef.current) return;
+        try {
+            await gameService.submitDailyScore({
+                playerId: id,
+                nickname: name,
+                elapsedSeconds: pending.elapsedSeconds,
+                date: pending.date,
+            });
+            pendingDailySubmitRef.current = null;
+        } catch {
+            // Keep pending so they can retry from the board.
+        }
+    };
+
+    const handleNicknameSaved = async (name: string) => {
+        const cleaned = await saveNickname(name);
+        setNickname(cleaned);
+        nicknameRef.current = cleaned;
+        await postDailyScore();
+    };
+
     // Record win once when congrats appears (moves + elapsed at that moment)
     useEffect(() => {
         if (!showCongrats || !gameState || winRecordedRef.current) return;
@@ -575,6 +620,11 @@ export const GameBoard: React.FC = () => {
         })();
         if (isDailyRef.current) {
             setDailyCompleted(true);
+            const date = dailyDateRef.current;
+            if (date && !usedSolveRef.current) {
+                pendingDailySubmitRef.current = { elapsedSeconds, date };
+                void postDailyScore();
+            }
         }
     }, [showCongrats, gameState, elapsedSeconds]);
 
@@ -692,6 +742,7 @@ export const GameBoard: React.FC = () => {
             setActionError(null);
             setHintedCard(null);
             usedUndoRef.current = false;
+            usedSolveRef.current = false;
             setNewAchievements([]);
             setDifficulty(clamped);
             difficultyRef.current = clamped;
@@ -699,6 +750,9 @@ export const GameBoard: React.FC = () => {
             setIsDailyGame(Boolean(options?.isDaily));
             isDailyRef.current = Boolean(options?.isDaily);
             if (!options?.isDaily) {
+                dailyDateRef.current = null;
+                setDailyDate(null);
+                pendingDailySubmitRef.current = null;
                 await savePreferredDifficulty(clamped);
                 await savePreferredSuitCount(suits);
             }
@@ -731,6 +785,8 @@ export const GameBoard: React.FC = () => {
     const handleDailySelect = async () => {
         try {
             const daily = await gameService.getDailyChallenge();
+            dailyDateRef.current = daily.date;
+            setDailyDate(daily.date);
             await startGameWithDifficulty(
                 daily.difficulty,
                 clampSuitCount(daily.suit_count),
@@ -816,6 +872,8 @@ export const GameBoard: React.FC = () => {
 
         try {
             const newStates = await gameService.solveGame();
+            usedSolveRef.current = true;
+            pendingDailySubmitRef.current = null;
             await playStateSequence(newStates, runId, solveRunIdRef, SOLVE_REPLAY_DELAY_MS);
         } catch (err) {
             if (isRunActive(runId, solveRunIdRef)) {
@@ -946,8 +1004,12 @@ export const GameBoard: React.FC = () => {
             setSuitCount(preferredSuits);
             setIsDailyGame(false);
             isDailyRef.current = false;
+            dailyDateRef.current = null;
+            setDailyDate(null);
+            pendingDailySubmitRef.current = null;
             setHintedCard(null);
             usedUndoRef.current = false;
+            usedSolveRef.current = false;
             const state = await gameService.startNewGame(preferred, { suitCount: preferredSuits });
             setGameState(state[0]);
             setElapsedSeconds(0);
@@ -1041,6 +1103,12 @@ export const GameBoard: React.FC = () => {
                                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
                                 <Text style={styles.hudMetaLink}>Stats</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setShowLeaderboardModal(true)}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                                <Text style={styles.hudMetaLink}>Board</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => setShowThemeModal(true)}
@@ -1281,6 +1349,7 @@ export const GameBoard: React.FC = () => {
                     onClose={() => setShowDifficultyModal(false)}
                     onDifficultySelect={handleDifficultySelect}
                     onDailySelect={() => { void handleDailySelect(); }}
+                    onOpenLeaderboard={() => setShowLeaderboardModal(true)}
                     currentDifficulty={difficulty}
                     currentSuitCount={suitCount}
                     dailyCompleted={dailyCompleted}
@@ -1289,6 +1358,15 @@ export const GameBoard: React.FC = () => {
                 <StatsModal
                     visible={showStatsModal}
                     onClose={() => setShowStatsModal(false)}
+                />
+
+                <LeaderboardModal
+                    visible={showLeaderboardModal}
+                    onClose={() => setShowLeaderboardModal(false)}
+                    playerId={playerId}
+                    nickname={nickname}
+                    date={dailyDate}
+                    onNicknameSaved={handleNicknameSaved}
                 />
 
                 <ThemeModal
@@ -1350,6 +1428,11 @@ export const GameBoard: React.FC = () => {
                                     {isDailyGame ? 'Daily · ' : ''}{difficultyLabel(difficulty)} · {SUIT_COUNT_LABELS[suitCount]}
                                     {isDailyGame && dailyStreak > 0 ? ` · 🔥 ${dailyStreak}` : ''}
                                 </Text>
+                                {isDailyGame && !nickname ? (
+                                    <Text style={styles.congratsBoardHint}>
+                                        Open Board and pick a name to post this score
+                                    </Text>
+                                ) : null}
                             </Animated.View>
                         </ViewShot>
 
@@ -1385,6 +1468,14 @@ export const GameBoard: React.FC = () => {
                             <TouchableOpacity style={styles.congratsShareButton} onPress={() => { void handleShareWin(); }} disabled={sharing}>
                                 <Text style={styles.congratsShareButtonText}>{sharing ? 'Sharing…' : 'Share'}</Text>
                             </TouchableOpacity>
+                            {isDailyGame ? (
+                                <TouchableOpacity
+                                    style={styles.congratsShareButton}
+                                    onPress={() => setShowLeaderboardModal(true)}
+                                >
+                                    <Text style={styles.congratsShareButtonText}>Board</Text>
+                                </TouchableOpacity>
+                            ) : null}
                             <TouchableOpacity style={styles.congratsButton} onPress={dismissCongratsAndNewGame}>
                                 <Text style={styles.congratsButtonText}>New Game</Text>
                             </TouchableOpacity>
@@ -1802,6 +1893,13 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginTop: 6,
     },
+    congratsBoardHint: {
+        color: COLORS.brassLight,
+        fontSize: 12,
+        fontWeight: '600',
+        marginTop: 8,
+        textAlign: 'center',
+    },
     congratsSuitsRow: {
         flexDirection: 'row',
         justifyContent: 'center',
@@ -1834,6 +1932,8 @@ const styles = StyleSheet.create({
     congratsActions: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
         gap: 12,
     },
     congratsShareButton: {

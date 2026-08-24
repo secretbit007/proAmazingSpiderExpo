@@ -1,4 +1,4 @@
-import { DailyChallenge, GameState, HintResponse, MoveRequest } from '../types/gameTypes';
+import { DailyChallenge, GameState, HintResponse, LeaderboardResponse, MoveRequest } from '../types/gameTypes';
 import { API_BASE_URL, API_FETCH_TIMEOUT_MS } from '../constants/ApiConfig';
 import { sessionStorage } from '../utils/sessionStorage';
 
@@ -145,6 +145,34 @@ export const api = {
 
   getDailyChallenge: async (): Promise<DailyChallenge> => {
     const response = await apiFetch('/daily');
+    return handleResponse(response);
+  },
+
+  getDailyLeaderboard: async (playerId: string, date?: string): Promise<LeaderboardResponse> => {
+    const params = new URLSearchParams();
+    if (playerId) params.set('player_id', playerId);
+    if (date) params.set('date', date);
+    const query = params.toString();
+    const response = await apiFetch(`/leaderboard/daily${query ? `?${query}` : ''}`);
+    return handleResponse(response);
+  },
+
+  submitDailyScore: async (payload: {
+    playerId: string;
+    nickname: string;
+    elapsedSeconds: number;
+    date?: string;
+  }): Promise<LeaderboardResponse> => {
+    const response = await apiFetch('/leaderboard/daily', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        player_id: payload.playerId,
+        nickname: payload.nickname,
+        elapsed_seconds: payload.elapsedSeconds,
+        date: payload.date ?? null,
+      }),
+    });
     return handleResponse(response);
   },
 };

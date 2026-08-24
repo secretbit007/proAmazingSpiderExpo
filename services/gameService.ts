@@ -1,4 +1,4 @@
-import { DailyChallenge, GameState, HintResponse } from '../types/gameTypes';
+import { DailyChallenge, GameState, HintResponse, LeaderboardResponse } from '../types/gameTypes';
 import { convertBackendToFrontend } from '../utils/gameStateConverter';
 import { buildSolveReplayStates } from '../utils/solveReplay';
 import { sessionStorage } from '../utils/sessionStorage';
@@ -84,6 +84,19 @@ export const gameService = {
 
   getDailyChallenge: async (): Promise<DailyChallenge> => {
     return api.getDailyChallenge();
+  },
+
+  getDailyLeaderboard: async (playerId: string, date?: string): Promise<LeaderboardResponse> => {
+    return api.getDailyLeaderboard(playerId, date);
+  },
+
+  submitDailyScore: async (payload: {
+    playerId: string;
+    nickname: string;
+    elapsedSeconds: number;
+    date?: string;
+  }): Promise<LeaderboardResponse> => {
+    return api.submitDailyScore(payload);
   },
 
   clearSession: (): void => {
