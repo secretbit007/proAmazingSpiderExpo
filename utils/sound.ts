@@ -1,4 +1,5 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+import { Platform } from 'react-native';
 import { loadSoundEnabled } from './appearance';
 
 export type SoundName = 'deal' | 'flip' | 'complete';
@@ -8,6 +9,9 @@ const SOURCES: Record<SoundName, number> = {
   flip: require('../assets/sounds/flip.wav'),
   complete: require('../assets/sounds/complete.wav'),
 };
+
+// iOS .playback session + iPad speakers make the same WAV much louder than Android.
+const EFFECT_VOLUME = Platform.OS === 'ios' ? 0.25 : 0.7;
 
 let players: Partial<Record<SoundName, AudioPlayer>> = {};
 let ready = false;
@@ -23,7 +27,7 @@ export async function initSounds(): Promise<void> {
     });
     (Object.keys(SOURCES) as SoundName[]).forEach((name) => {
       const player = createAudioPlayer(SOURCES[name]);
-      player.volume = 0.7;
+      player.volume = EFFECT_VOLUME;
       players[name] = player;
     });
     ready = true;
@@ -45,7 +49,9 @@ export function playSound(name: SoundName): void {
   const player = players[name];
   if (!player) return;
     try {
+      player.volume = EFFECT_VOLUME;
       void player.seekTo(0).then(() => {
+        player.volume = EFFECT_VOLUME;
         player.play();
       });
     } catch {
